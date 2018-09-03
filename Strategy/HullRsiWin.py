@@ -24,7 +24,7 @@ from Indexer import RSI, MA, dfCross
 
 class HullRsiWin(StrategyTemplate):
     strategy_name = 'HullRsiWin'
-    strategy_para_name_list = ['N1', 'M1', 'M2', 'M', 'MaN']
+    strategy_para_name_list = ['N1', 'M1', 'M2', 'N', 'MaN']
 
     def __init__(self,):
         super(HullRsiWin, self).__init__()

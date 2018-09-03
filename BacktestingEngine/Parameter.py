@@ -5,10 +5,11 @@
 # 参数设置
 strategy_name = 'HullRsiWin'
 exchange_id = 'SHFE'
-sec_id = 'RB'
+sec_id = 'AU'
 K_MIN = 3600
 startdate = '2010-01-01'
 enddate = '2018-07-01'
+multi_symbol_bt_swtich = True  # 多品种多周期优化开关，打开后代码会从下面标识的文件中导入参数
 result_para_dic = {  # 结果计算相关参数
     'positionRatio': 0.3,  # 持仓比例
     'initialCash': 1000000,  # 起始资金
@@ -16,21 +17,23 @@ result_para_dic = {  # 结果计算相关参数
     'remove_polar_rate': 0.01
 }
 
+
 strategy_para_dic = {
     # 该参数表用于各品种模式下的测试，当new为True时使用该参数表生成参数文件，为False时读取策略品种文件夹中已有的参数文件
     'MacdMaWin': {
-        'new': True,
-        'MS': [5, 10, 15],
-        'MM': [10, 20, 30],
-        "ML": [20, 30, 40, 50]
+        'new_para': True,
+        'MS': [5, 10],
+        'MM': [10, 20],
+        "ML": [20, 30],
+        "MA": [30, 40]
     },
     'HullRsiWin': {
-        'new': True,
-        "N1": [15, 20, 25, 30, 35],
-        "M1": [6, 10, 14],
+        'new_para': True,
+        "N1": [15, 20],
+        "M1": [6, 10],
         "M2": [3, 6, 9],
-        "N": [6, 10, 14, 18],
-        "MaN": [20, 30, 40, 50]
+        "N": [6, 10],
+        "MaN": [20, 30]
     }
 }
 # ====================止损控制开关======================
@@ -147,21 +150,18 @@ ResultIndexDic=[
     "AveSuccessiveLoss" #平均连续亏损次数'
 ]
 '''
-# ===============多品种多周期优化参数=============================
-# 多品种多周期优化开关，打开后代码会从下面标识的文件中导入参数
-symbol_KMIN_opt_swtich = True
+
 
 # 1.品种和周期组合文件
-symbol_KMIN_set_filename = strategyName + '_symbol_KMIN_set.xlsx'
+symbol_KMIN_set_filename = strategy_name + '_mulit_symbol_setting_bt.xlsx'
 # 2.第一步的结果中挑出满足要求的项，做成双止损组合文件
-stoploss_set_filename = strategyName + '_stoploss_set.xlsx'
+stoploss_set_filename = strategy_name + '_stoploss_set.xlsx'
 # 3.从第二步的结果中挑出满足要求的项，做推进
-forward_set_filename = strategyName + '_forward_set.xlsx'
+forward_set_filename = strategy_name + '_forward_set.xlsx'
 
 # ====================系统参数==================================
-folderLevel = 2
-resultFolderName = '\\Results\\'
-
+root_path = 'D:\\BT_Results\\'
+strategy_folder = "%s%s\\" % (root_path, strategy_name)
 
 # ===================== 通用功能函数 =========================================
 def para_str_to_float(para_str):
@@ -178,7 +178,8 @@ def para_str_to_float(para_str):
 def para_str_to_int(para_str):
     # 功能函数：用于将从多品种多周期文件读取进来的字符串格式的参数列表转换为符点型列表
     para_float_list = []
-    if type(para_str) == 'int':
+    p_type = type(para_str)
+    if p_type == int or p_type == long:
         para_float_list.append(int(para_str))
     else:
         for x in para_str.split(','):
