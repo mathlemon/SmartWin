@@ -37,31 +37,42 @@ strategy_para_dic = {
     }
 }
 # ====================止损控制开关======================
-progress_close = False      # 增量模式开关
-calc_all_close = False      # 一次全部计算模式，该模式不能与混合止损同时打开
-calcMultiSLT_close = True  # 混合止损开关
+calcMultiSLT_close = False  # 混合止损开关
 
-
-calcDsl_close = True   # dsl动态止损开关
-dsl_target_list_close = [-0.018, -0.02, -0.022]
-
-calcOwnl_close = True  # ownl有赚不亏开关
-ownl_protect_list_close = [0.008, 0.009, 0.010, 0.011]    # ownl保护触发门限
-ownl_floor_list_close = [3]   # ownl地板价：止损线(PT数量）
-
-calcGownl_close = True  # gownl递进式有赚不亏开关
-gownl_protect_list_close = [0.007, 0.009, 0.011]  # gownl保护触发门限
-gownl_floor_list_close = [-4, -1, 2, 5]   # gownl地板价起始点
-gownl_step_list_close = [1, 2]    # gownl地板价递进步伐
-
-calcFrsl_close = False  # frsl固定比例止损开关
-frsl_target_list_close = [-0.01, -0.011, -0.012]  # 固定止损比例
-
-calcAtrsl_close = False     # atrsl ATR吊灯和yoyo止损开关
-atr_pendant_n_list_close = [5, 8]     # 吊灯atr的n值
-atr_pendant_rate_list_close = [1.0, 1.5, 2.0]     # 吊灯atr的最大回撤止损atr比例
-atr_yoyo_n_list_close = [8, 16, 30]   # yoyo的atr n值
-atr_yoyo_rate_list_close = [1, 1.2, 1.5]      # yoyo的止损atr比例
+stop_loss_para_dic ={
+    "multi_sl":{
+        "multi_sl":False  # 混合止损开关
+    },
+    "dsl": {
+        "dsl": True, # 动态止损开关
+        "dsl_target":[-0.018, -0.02, -0.022]
+    },
+    "ownl":{
+        "ownl": False,
+        "ownl_protect": [0.008, 0.009, 0.010, 0.011],    # ownl保护触发门限
+        "ownl_floor": [3]   # ownl地板价：止损线(PT数量）
+    },
+    "frsl":{
+        "frsl":False,
+        "frsl_targe": [-0.01, -0.011, -0.012]  # 固定止损比例
+    },
+    "gownl":{
+        "gownl":False,
+        "gownl_protect":[0.007, 0.009, 0.011],  # gownl保护触发门限
+        "gownl_floor": [-4, -1, 2, 5],   # gownl地板价起始点
+        "gownl_step": [1, 2]    # gownl地板价递进步伐
+    },
+    "pendant":{
+        "pendant": False,
+        "pendant_n": [3, 5, 7], # 吊灯atr的n值
+        "pendant_rate":[1.0, 1.5, 2.0]     # 吊灯atr的最大回撤止损atr比例
+    },
+    "yoyo":{
+        "yoyo":False,
+        "yoyo_n": [8, 16, 30],   # yoyo的atr n值
+        "yoyo_rate": [1, 1.2, 1.5]      # yoyo的止损atr比例
+    }
+}
 
 # =============推进控制开关===================
 # nextMonthName='18-05'

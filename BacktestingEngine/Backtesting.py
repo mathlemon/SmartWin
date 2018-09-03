@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+SmartWin回策框架
+回测引擎
+作者:Smart
+新建时间：2018-09-02
+"""
 import Strategy
 import pandas as pd
 import os
@@ -167,7 +173,6 @@ if __name__ == '__main__':
                 'result_para_dic': Parameter.result_para_dic,
                 'new_para': new_para
             }
-            default_para_dic = Parameter.strategy_para_dic[strategy_name]
             if new_para:
                 # 参数新增模式下，加载参数
                 for para_name in strategy_para_name_list:
@@ -213,4 +218,4 @@ if __name__ == '__main__':
         allsymbolresult = pd.concat([allsymbolresult, r])
     allsymbolresult.reset_index(drop=False, inplace=True)
     os.chdir(Parameter.strategy_folder)
-    allsymbolresult.to_csv(strategy_name + "_symbol_KMIN_results.csv")
+    allsymbolresult.to_csv(strategy_name + "_multi_symbol_final_results.csv")
