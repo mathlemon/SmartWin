@@ -7,9 +7,11 @@ SmartWin回策框架
 
 from DSL import DslStopLoss
 from FRSL import FrslStopLoss
+from GOWNL import GownlStopLoss
 from MultiStopLoss import multi_stop_loss
 
 strategy_mapping_dic = {
     'dsl': DslStopLoss,
-    'frsl': FrslStopLoss
+    'frsl': FrslStopLoss,
+    'gownl': GownlStopLoss
 }
