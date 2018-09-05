@@ -33,20 +33,24 @@ class MacdMaWin(StrategyTemplate):
         raw_data['MA'] = MA.calEMA(raw_data['close'], MA_N)
         # raw_data['MA'] = MA.hull_ma(raw_data['close'], MA_N)
 
+        raw_data['next_strtime'] = raw_data['strtime'].shift(-1).fillna(method='ffill')
+        raw_data['next_open'] = raw_data['open'].shift(-1).fillna(method='ffill')
+        raw_data['next_utc'] = raw_data['utc_time'].shift(-1).fillna(method='ffill')
+
         # 计算MACD的金叉和死叉
         raw_data['MACD_True'], raw_data['MACD_Cross'] = dfCross(raw_data, 'DIF', 'DEA')
 
         # ================================ 找出买卖点================================================
-        goldcrosslist = pd.DataFrame({'goldcrosstime': raw_data.loc[raw_data['MACD_Cross'] == 1, 'strtime']})
-        goldcrosslist['goldcrossutc'] = raw_data.loc[raw_data['MACD_Cross'] == 1, 'utc_time']
+        goldcrosslist = pd.DataFrame({'goldcrosstime': raw_data.loc[raw_data['MACD_Cross'] == 1, 'next_strtime']})
+        goldcrosslist['goldcrossutc'] = raw_data.loc[raw_data['MACD_Cross'] == 1, 'next_utc']
         goldcrosslist['goldcrossindex'] = raw_data.loc[raw_data['MACD_Cross'] == 1, 'Unnamed: 0']
-        goldcrosslist['goldcrossprice'] = raw_data.loc[raw_data['MACD_Cross'] == 1, 'close']
+        goldcrosslist['goldcrossprice'] = raw_data.loc[raw_data['MACD_Cross'] == 1, 'next_open']
 
         # 取出死叉点
-        deathcrosslist = pd.DataFrame({'deathcrosstime': raw_data.loc[raw_data['MACD_Cross'] == -1, 'strtime']})
-        deathcrosslist['deathcrossutc'] = raw_data.loc[raw_data['MACD_Cross'] == -1, 'utc_time']
+        deathcrosslist = pd.DataFrame({'deathcrosstime': raw_data.loc[raw_data['MACD_Cross'] == -1, 'next_strtime']})
+        deathcrosslist['deathcrossutc'] = raw_data.loc[raw_data['MACD_Cross'] == -1, 'next_utc']
         deathcrosslist['deathcrossindex'] = raw_data.loc[raw_data['MACD_Cross'] == -1, 'Unnamed: 0']
-        deathcrosslist['deathcrossprice'] = raw_data.loc[raw_data['MACD_Cross'] == -1, 'close']
+        deathcrosslist['deathcrossprice'] = raw_data.loc[raw_data['MACD_Cross'] == -1, 'next_open']
         goldcrosslist = goldcrosslist.reset_index(drop=True)
         deathcrosslist = deathcrosslist.reset_index(drop=True)
 
