@@ -132,32 +132,6 @@ ResultIndexDic = [
     "AvgSuccessiveEarn",  # 平均连续盈利次数
     "AveSuccessiveLoss"  # 平均连续亏损次数'
 ]
-'''
-#下面这个是指标全量，要加减从里面挑
-ResultIndexDic=[
-    "OprTimes", #操作次数
-    "LongOprTimes",#多操作次数
-    "ShortOprTimes",#空操作次数
-    "EndCash",  # 最终资金
-    "LongOprRate",#多操作占比
-    "ShortOprRate",#空操作占比
-    "Annual",#年化收益
-    "Sharpe",#夏普
-    "SR",#成功率
-    "LongSR",#多操作成功率
-    "ShortSR",#空操作成功率
-    "DrawBack",#资金最大回撤
-    "MaxSingleEarnRate",#单次最大盈利率
-    "MaxSingleLossRate",#单次最大亏损率
-    "ProfitLossRate",#盈亏比
-    "LongProfitLossRate",#多操作盈亏比
-    "ShoartProfitLossRate",#空操作盈亏比
-    "MaxSuccessiveEarn",#最大连续盈利次数
-    "MaxSuccessiveLoss",#最大连续亏损次数
-    "AvgSuccessiveEarn",#平均连续盈利次数
-    "AveSuccessiveLoss" #平均连续亏损次数'
-]
-'''
 
 # 1.品种和周期组合文件
 symbol_KMIN_set_filename = strategy_name + '_mulit_symbol_setting_bt.xlsx'
@@ -194,56 +168,3 @@ def para_str_to_int(para_str):
             para_float_list.append(int(x))
     return para_float_list
 
-
-def generat_para_file(para_list_dic=None):
-    import pandas as pd
-    """
-    para_dic = strategy_para_dic
-    keys = para_dic.keys()
-    parasetlist = pd.DataFrame(columns=['Setname'] + keys)
-    total_num = 1
-    for v in para_dic.values():
-        total_num *= len(v)
-    parasetlist['No.'] = range(total_num)
-    for i in range(total_num):
-        parasetlist.ix[i, 'Setname'] = "Set%d" % i
-    multipliter = total_num
-    v_num = 1
-    for k, v in para_dic.items():
-        v_num = v_num * len(v)
-        for i in range(v_num):
-            v_value = v[i]
-            multipliter = multipliter/v_num
-            parasetlist.loc[i*multipliter: (i+1)*multipliter, k] = v_value
-            parasetlist.loc[i*multipliter:(i+1)*multipliter, 'Setname'] = parasetlist.loc[i*multipliter:(i+1)*multipliter, 'Setname'] + " %s_%d" % (k, v_value)
-    return parasetlist
-    """
-    if para_list_dic:
-        n_list = para_str_to_int(para_list_dic['N'])
-        m1_list = para_str_to_int(para_list_dic['M1'])
-        m2_list = para_str_to_int(para_list_dic['M2'])
-        n1_list = para_str_to_int(para_list_dic['N1'])
-        man_list = para_str_to_int(para_list_dic['MaN'])
-    else:
-        n_list = strategy_para_dic['N']
-        m1_list = strategy_para_dic['M1']
-        m2_list = strategy_para_dic['M2']
-        n1_list = strategy_para_dic['N1']
-        man_list = strategy_para_dic['MaN']
-    setlist = []
-    i = 0
-    for n1 in n1_list:
-        for m1 in m1_list:
-            #   for m2 in range(3, 15, 3):
-            for m2 in m2_list:
-                # for n in range(3, 16, 3):
-                for n in n_list:
-                    # for ma_n in range(20, 51, 10):
-                    for ma_n in man_list:
-                        setname = "Set%d N1_%d M1_%d M2_%d N_%d MaN_%d" % (i, n1, m1, m2, n, ma_n)
-                        l = [setname, n1, m1, m2, n, ma_n]
-                        setlist.append(l)
-                        i += 1
-
-    setpd = pd.DataFrame(setlist, columns=['Setname', 'N1', 'M1', 'M2', 'N', 'MaN'])
-    return setpd
