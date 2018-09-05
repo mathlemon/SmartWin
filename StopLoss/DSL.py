@@ -8,10 +8,12 @@ dsl止损出场
 from StopLossTemplate import StopLossTemplate
 import pandas as pd
 
+
 class DslStopLoss(StopLossTemplate):
     """
     dsl止损出场
     """
+
     def __init__(self, para_dic):
         super(DslStopLoss, self).__init__(para_dic)
         self.para_dic = para_dic
@@ -51,10 +53,19 @@ class DslStopLoss(StopLossTemplate):
                     utctime = temp['utc_time']
                     pprice = maxprice * (1 + dsl_target_value)
                     close_price = pprice // self.price_tick * self.price_tick
-                    result_dic[dsl_target['para_name']] = [close_price, strtime, utctime, 0]
+                    result_dic[dsl_target['para_name']] = {
+                        "new_closeprice": close_price,
+                        "new_closetime": strtime,
+                        "new_closeutc": utctime,
+                        "new_closeindex": 0
+                    }
                 else:
-                    result_dic[dsl_target['para_name']] = [opr['closeprice'], opr['closetime'], opr['closeutc'],
-                                                       opr['closeindex']]
+                    result_dic[dsl_target['para_name']] = {
+                        "new_closeprice": opr['closeprice'],
+                        "new_closetime": opr['closetime'],
+                        "new_closeutc": opr['closeutc'],
+                        "new_closeindex": opr['closeindex']
+                    }
         else:
             df = pd.DataFrame({'high': bar_df['shortHigh'], 'low': bar_df['shortLow'], 'strtime': bar_df['strtime'],
                                'utc_time': bar_df['utc_time']})
@@ -69,10 +80,19 @@ class DslStopLoss(StopLossTemplate):
                     maxprice = temp['min2here']
                     strtime = temp['strtime']
                     utctime = temp['utc_time']
-                    pprice = maxprice * (1 - dsl_target)
-                    close_price = pprice //self.price_tick * self.price_tick + max(self.price_tick, pprice % self.price_tick)
-                    result_dic[dsl_target['para_name']] = [close_price, strtime, utctime, 0]
+                    pprice = maxprice * (1 - dsl_target_value)
+                    close_price = pprice // self.price_tick * self.price_tick + max(self.price_tick, pprice % self.price_tick)
+                    result_dic[dsl_target['para_name']] = {
+                        "new_closeprice": close_price,
+                        "new_closetime": strtime,
+                        "new_closeutc": utctime,
+                        "new_closeindex": 0
+                    }
                 else:
-                    result_dic[dsl_target['para_name']] = [opr['closeprice'], opr['closetime'], opr['closeutc'],
-                                                           opr['closeindex']]
+                    result_dic[dsl_target['para_name']] = {
+                        "new_closeprice": opr['closeprice'],
+                        "new_closetime": opr['closetime'],
+                        "new_closeutc": opr['closeutc'],
+                        "new_closeindex": opr['closeindex']
+                    }
         return result_dic

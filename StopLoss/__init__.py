@@ -6,7 +6,10 @@ SmartWin回策框架
 """
 
 from DSL import DslStopLoss
+from FRSL import FrslStopLoss
+from MultiStopLoss import multi_stop_loss
 
 strategy_mapping_dic = {
-    'dsl': DslStopLoss
+    'dsl': DslStopLoss,
+    'frsl': FrslStopLoss
 }

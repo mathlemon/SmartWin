@@ -5,6 +5,8 @@ SmartWin回策框架
 作者:Smart
 新建时间：2018-09-03
 """
+
+
 class StopLossTemplate(object):
     """
     止损出场基础模板

@@ -7,179 +7,190 @@ SmartWin回策框架
 """
 import StopLoss
 import DataInterface.DataInterface as DI
+import DataInterface.ResultStatistics as RS
 import pandas as pd
 import os
-import numpy as np
 import multiprocessing
-import datetime
 import Parameter
 import time
 
 
-def single_sl(strategy_name, symbol_info, bar_type, para_set_list, stop_loss_para_dic, result_para_dic, time_start):
+def bar1m_prepare(bar1m):
+    bar1m['longHigh'] = bar1m['high']
+    bar1m['shortHigh'] = bar1m['high']
+    bar1m['longLow'] = bar1m['low']
+    bar1m['shortLow'] = bar1m['low']
+    bar1m['highshift1'] = bar1m['high'].shift(1).fillna(0)
+    bar1m['lowshift1'] = bar1m['low'].shift(1).fillna(0)
+    bar1m.loc[bar1m['open'] < bar1m['close'], 'longHigh'] = bar1m['highshift1']
+    bar1m.loc[bar1m['open'] > bar1m['close'], 'shortLow'] = bar1m['lowshift1']
+    bar1m.drop('highshift1', axis=1, inplace=True)
+    bar1m.drop('lowshift1', axis=1, inplace=True)
+    # bar1m['Unnamed: 0'] = range(bar1m.shape[0])
+    return bar1m
+
+
+def single_sl(strategy_name, symbol_info, bar_type, setname, bar1m_dic, barxm_dic, stop_loss_class_list, result_para_dic, indexcols, timestart):
+    print setname
     symbol = symbol_info.domain_symbol
-    price_tick = symbol_info.getPriceTick()
     bt_folder = "%s %d backtesting\\" % (symbol, bar_type)
     oprdf = pd.read_csv(bt_folder + strategy_name + ' ' + symbol + str(bar_type) + ' ' + setname + ' result.csv')
 
     close_type_list = []
     all_final_result_dic = {}  # 这个是用来保存每个文件的RS结果，返回给外部调用的
-    all_close_result_dic = {}  # 这个是用来保存每个参数每次操作的止损结果
-    for close_para in all_close_para_list:
-        close_type_list.append(close_para['name'])
+    all_stop_loss_opr_result_dic = {}  # 这个是用来保存每个参数每次操作的止损结果
+    for stop_loss_class in stop_loss_class_list:
+        sl_name = stop_loss_class.get_sl_name()
+        close_type_list.append(sl_name)
         final_result_dic = {}
-        for para in close_para['paralist']:
+        stop_loss_opr_result_dic = {}
+        for para in stop_loss_class.get_para_dic_list():
             final_result_dic[para['para_name']] = []
-            all_close_result_dic[para['para_name']] = []
-        all_final_result_dic[close_para['name']] = final_result_dic
+            stop_loss_opr_result_dic[para['para_name']] = []
+        all_stop_loss_opr_result_dic[sl_name] = stop_loss_opr_result_dic
+        all_final_result_dic[sl_name] = final_result_dic
+
+    for stop_loss_class in stop_loss_class_list:
+        if stop_loss_class.need_data_process_before_domain:
+            bar1m_dic, barxm_dic = stop_loss_class.data_process_before_domain(bar1m_dic, barxm_dic)
 
     symbolDomainDic = symbol_info.amendSymbolDomainDicByOpr(oprdf)
-    bar1m = DC.getDomainbarByDomainSymbol(symbol_info.getSymbolList(), bar1mdic, symbolDomainDic)
-    bar1m = bar1mPrepare(bar1m)
-    barxm = DC.getDomainbarByDomainSymbol(symbol_info.getSymbolList(), barxmdic, symbolDomainDic)
+    bar1m = DI.getDomainbarByDomainSymbol(symbol_info.getSymbolList(), bar1m_dic, symbolDomainDic)
+    bar1m = bar1m_prepare(bar1m)
+    barxm = DI.getDomainbarByDomainSymbol(symbol_info.getSymbolList(), barxm_dic, symbolDomainDic)
+
+    for stop_loss_class in stop_loss_class_list:
+        if stop_loss_class.need_data_process_after_domain:
+            bar1m, barxm = stop_loss_class.data_process_after_domain(bar1m, barxm)
 
     barxm.set_index('utc_time', drop=False, inplace=True)  # 开始时间对齐
     bar1m.set_index('utc_time', drop=False, inplace=True)
-    if 'gownl' in close_type_list:
-        # gownl数据预处理
-        barxm['index_num'] = range(barxm.shape[0])
-        bar1m['index_num'] = barxm['index_num']
-        bar1m.fillna(method='ffill', inplace=True)  # 用上一个非0值来填充
 
     positionRatio = result_para_dic['positionRatio']
     initialCash = result_para_dic['initialCash']
 
     oprnum = oprdf.shape[0]
     worknum = 0
-    for i in range(oprnum):
+
+    for i in range(261, oprnum):
         opr = oprdf.iloc[i]
-        startutc = barxm.loc[opr['openutc'], 'utc_endtime'] - 60  # 从开仓的10m线结束后开始
-        endutc = barxm.loc[opr['closeutc'], 'utc_endtime']  # 一直到平仓的10m线结束
+        startutc = barxm.loc[opr['openutc'], 'utc_endtime']  # 从开仓的10m线结束后开始
+        endutc = barxm.loc[opr['closeutc'], 'utc_endtime'] - 60  # 一直到平仓的10m线结束
         data1m = bar1m.loc[startutc:endutc]
-        for close_type_para in all_close_para_list:
-            close_type = close_type_para['name']
-            close_function = close_function_map[close_type]
-            close_para_list = close_type_para['paralist']
-            for close_para in close_para_list:
-                newcloseprice, strtime, utctime, timeindex = close_function(opr, data1m, close_para, price_tick)
-                all_close_result_dic[close_para['para_name']].append({
-                    'new_closeprice': newcloseprice,
-                    'new_closetime': strtime,
-                    'new_closeutc': utctime,
-                    'new_closeindex': timeindex
-                })
+        for stop_loss_class in stop_loss_class_list:
+            sl_name = stop_loss_class.get_sl_name()
+            stop_loss_opr_result_dic = all_stop_loss_opr_result_dic[sl_name]
+            opr_result_dic = stop_loss_class.get_opr_sl_result(opr, data1m)
+            for para in stop_loss_class.get_para_dic_list():
+                stop_loss_opr_result_dic[para['para_name']].append(opr_result_dic[para['para_name']])
 
     slip = symbol_info.getSlip()
 
-    olddailydf = pd.read_csv(
-        bt_folder + strategy_name + ' ' + symbol + str(bar_type) + ' ' + setname + ' dailyresult.csv',
-        index_col='date')
+    olddailydf = pd.read_csv(bt_folder + strategy_name + ' ' + symbol + str(bar_type) + ' ' + setname + ' dailyresult.csv', index_col='date')
     oldr = RS.getStatisticsResult(oprdf, False, indexcols, olddailydf)
-    dailyK = DC.generatDailyClose(barxm)
+    dailyK = DI.generatDailyClose(barxm)
 
-    # 全部止损完后，针对每个止损参数要单独计算一次结果
-    for close_type_para in all_close_para_list:
-        close_type = close_type_para['name']
-        folder_prefix = close_type_para['folderPrefix']
-        file_suffix = close_type_para['fileSuffix']
-        close_para_list = close_type_para['paralist']
-        for close_para in close_para_list:
-            para_name = close_para['para_name']
-            close_result_list = all_close_result_dic[para_name]
-            result_df = pd.DataFrame(close_para_list)
+    for stop_loss_class in stop_loss_class_list:
+        sl_name = stop_loss_class.get_sl_name()
+        stop_loss_opr_result_dic = all_stop_loss_opr_result_dic[sl_name]
+        final_result_dic = all_final_result_dic[sl_name]
+        folder_prefix = stop_loss_class.get_folder_prefix()
+        file_suffix = stop_loss_class.get_file_suffix()
+        for para_name, opr_result_dic_list in stop_loss_opr_result_dic.items():
+            result_df = pd.DataFrame(opr_result_dic_list)
             oprdf_temp = pd.concat([oprdf, result_df], axis=1)
-            oprdf_temp['new_ret'] = ((oprdf_temp['new_closeprice'] - oprdf_temp['openprice']) * oprdf_temp[
-                'tradetype']) - slip
+            oprdf_temp['new_ret'] = ((oprdf_temp['new_closeprice'] - oprdf_temp['openprice']) * oprdf_temp['tradetype']) - slip
             oprdf_temp['new_ret_r'] = oprdf_temp['new_ret'] / oprdf_temp['openprice']
-            oprdf_temp['new_commission_fee'], oprdf_temp['new_per earn'], oprdf_temp['new_own cash'], oprdf_temp[
-                'new_hands'] = RS.calcResult(oprdf_temp,
-                                             symbol_info,
-                                             initialCash,
-                                             positionRatio, ret_col='new_ret')
+            oprdf_temp['new_commission_fee'], oprdf_temp['new_per earn'], oprdf_temp['new_own cash'], oprdf_temp['new_hands'] = \
+                RS.calcResult(oprdf_temp, symbol_info, initialCash, positionRatio, ret_col='new_ret')
             # 保存新的result文档
             tofolder = "%s%s\\" % (folder_prefix, para_name)
-            oprdf_temp.to_csv(
-                tofolder + strategy_name + ' ' + symbol + str(bar_type) + ' ' + setname + ' ' + file_suffix,
-                index=False)
-
+            oprdf_temp.to_csv(tofolder + strategy_name + ' ' + symbol + str(bar_type) + ' ' + setname + ' ' + file_suffix + para_name + '.csv', index=False)
             dR = RS.dailyReturn(symbol_info, oprdf_temp, dailyK, initialCash)  # 计算生成每日结果
             dR.calDailyResult()
-            dR.dailyClose.to_csv(
-                (tofolder + strategy_name + ' ' + symbol + str(bar_type) + ' ' + setname + ' daily' + file_suffix))
-            newr = RS.getStatisticsResult(oprdf, True, indexcols, dR.dailyClose)
-            final_result_dic = all_final_result_dic[close_type]
+            dR.dailyClose.to_csv(tofolder + strategy_name + ' ' + symbol + str(bar_type) + ' ' + setname + ' daily' + file_suffix + para_name + '.csv')
+            newr = RS.getStatisticsResult(oprdf_temp, True, indexcols, dR.dailyClose)
+            worknum = oprdf_temp.loc[oprdf_temp['new_closeindex'] != oprdf_temp['closeindex']].shape[0]
             final_result_dic[para_name] = [setname, para_name, worknum] + oldr + newr
 
     return all_final_result_dic
 
 
-def single_sl_engine(strategy_name, symbol_info, bar_type, para_set_list, stop_loss_para_dic, result_para_dic, time_start):
-    symbol = symbolinfo.domain_symbol
+def single_sl_engine(strategy_name, symbol_info, bar_type, para_set_list, stop_loss_para_dic, result_para_dic, bar1m_dic, barxm_dic, time_start):
+    time_enter_sl_engine = time.time()
+    print ("time_enter_sl_engine:%.4f" % (time_enter_sl_engine - time_start))
+    symbol = symbol_info.domain_symbol
+    price_tick = symbol_info.getPriceTick()
+    indexcols = Parameter.ResultIndexDic
     new_indexcols = []
-    for i in indexcols:
-        new_indexcols.append('new_' + i)
-    paranum = parasetlist.shape[0]
+    for col in indexcols:
+        new_indexcols.append('new_' + col)
+    paranum = len(para_set_list)
     all_result_dic = {}  # 这个保存的是每个止损参数的结果
-    for close_para_dic in all_close_para_dic:
-        close_folder_prefix = close_para_dic['folderPrefix']
-        paralist = close_para_dic['paralist']
+    stop_loss_class_list = []
+    for k, v in stop_loss_para_dic.items():
+        v['price_tick'] = price_tick  # 传入的止损参数中加入price_tick，部分止损方式定价时要用到
+        stop_loss_class = StopLoss.strategy_mapping_dic[k](v)
+        stop_loss_class_list.append(stop_loss_class)
+        folder_prefix = stop_loss_class.get_folder_prefix()
+        para_list = stop_loss_class.get_para_dic_list()
         result_dic = {}
-        for para in paralist:
+        for para in para_list:
             para_name = para['para_name']
-            folderName = '%s%s' % (close_folder_prefix, para_name)
+            folder_name = '%s%s' % (folder_prefix, para_name)
             try:
-                os.mkdir(folderName)  # 创建文件夹
+                os.mkdir(folder_name)  # 创建文件夹
             except:
                 pass
-            resultdf = pd.DataFrame(columns=['setname', close_para_dic['name'], 'worknum'] + indexcols + new_indexcols)
+            resultdf = pd.DataFrame(columns=['setname', 'para_name', 'worknum'] + indexcols + new_indexcols)
             result_dic[para_name] = resultdf
-        all_result_dic[close_para_dic['name']] = result_dic
+        all_result_dic[k] = result_dic
     timestart = time.time()
     setnum = 0
     numlist = range(0, paranum, 100)
     numlist.append(paranum)
+    time_start_sl_cals = time.time()
+    print ("time start sl cals:%.4f" % (time_start_sl_cals - time_enter_sl_engine))
     for n in range(1, len(numlist)):
         pool = multiprocessing.Pool(multiprocessing.cpu_count() - 1)
         l = []
         for a in range(numlist[n - 1], numlist[n]):
-            setname = parasetlist.ix[a, 'Setname']
-            l.append(pool.apply_async(all_close.all_close, (strategyName,
-                                                            symbolinfo, bar_type, setname, bar1mdic, barxmdic,
-                                                            all_close_para_dic, result_para_dic, indexcols, timestart)))
+            setname = para_set_list[a]
+            l.append(single_sl(strategy_name, symbol_info, bar_type, setname, bar1m_dic, barxm_dic,
+                               stop_loss_class_list, result_para_dic, indexcols, timestart))
+            #l.append(pool.apply_async(single_sl, (strategy_name, symbol_info, bar_type, setname, bar1m_dic, barxm_dic,
+            #                                      stop_loss_class_list, result_para_dic, indexcols, timestart)))
         pool.close()
         pool.join()
 
         for res in l:
             get_result_dic = res.get()
-            for k, v in get_result_dic:
-                result_dic = all_result_dic[k]
-                for k1, v1 in v:
-                    result_dic[k1].loc[setnum] = v1
+            for sl_name, result_dic in get_result_dic.items():
+                to_result_dic = all_result_dic[sl_name]
+                for para_name, para_result in result_dic.items():
+                    to_result_dic[para_name].loc[setnum] = para_result
             setnum += 1
-    for close_para_dic in all_close_para_dic:
-        close_folder_prefix = close_para_dic['folderPrefix']
-        paralist = close_para_dic['paralist']
-        close_type = close_para_dic['name']
-        result_dic = all_result_dic[close_type]
+    time_fininsh_calc = time.time()
+    print ("time finish calc:%.4f" % (time_fininsh_calc - time_start_sl_cals))
+    for stop_loss_class in stop_loss_class_list:
+        sl_name = stop_loss_class.get_sl_name()
+        result_dic = all_result_dic[sl_name]
+        folder_prefix = stop_loss_class.get_folder_prefix()
         all_result_list = []
-        for para in paralist:
-            para_name = para['para_name']
-            folderName = '%s%s' % (close_folder_prefix, para_name)
-            resultdf = result_dic[para_name]
-            resultdf.to_csv(
-                folderName + '\\' + strategyName + ' ' + symbol + str(bar_type) + ' finalresult_%s%s.csv' % (
-                    close_type, para_name),
-                index=False)
-            all_result_list.append(resultdf)
+        for para_name, para_result_df in result_dic.items():
+            folderName = '%s%s' % (folder_prefix, para_name)
+            para_result_df.to_csv(folderName + '\\' + strategy_name + ' ' + symbol + str(bar_type) + ' finalresult_%s%s.csv' % (sl_name, para_name), index=False)
+            all_result_list.append(para_result_df)
         all_final_result = pd.concat(all_result_list)
-        all_final_result.to_csv(strategyName + ' ' + symbol + str(bar_type) + ' finalresult_%s.csv' % close_type,
-                                index=False)
+        all_final_result.to_csv(strategy_name + ' ' + symbol + str(bar_type) + ' finalresult_%s.csv' % sl_name, index=False)
+    time_finish_saving_file = time.time()
+    print ("time_finish_saving_file:%.4f" % (time_finish_saving_file - time_fininsh_calc))
     timeend = time.time()
     timecost = timeend - timestart
     print (u"全部止损计算完毕，共%d组数据，总耗时%.3f秒,平均%.3f秒/组" % (paranum, timecost, timecost / paranum))
 
 
-def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltlist, result_para_dic, indexcols):
+def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltlist, result_para_dic):
     """
     计算多个止损策略结合回测的结果
     :param strategyName:
@@ -192,6 +203,7 @@ def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltl
     :return:
     """
     symbol = symbolInfo.domain_symbol
+    indexcols = Parameter.ResultIndexDic
     new_indexcols = []
     for i in indexcols:
         new_indexcols.append('new_' + i)
@@ -199,7 +211,7 @@ def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltl
     allresultdf = pd.DataFrame(columns=allresultdf_cols)
 
     allnum = 0
-    paranum = parasetlist.shape[0]
+    paranum = len(parasetlist)
 
     # dailyK = DC.generatDailyClose(barxm)
 
@@ -209,9 +221,9 @@ def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltl
         sltset = []
         for t in slt['paralist']:
             sltset.append({'name': slt['name'],
-                           'sltValue': t,   # t是一个参数字典
+                           'sltValue': t,  # t是一个参数字典
                            'folder': ("%s%s\\" % (slt['folderPrefix'], t['para_name'])),
-                           'fileSuffix': slt['fileSuffix']
+                           'fileSuffix': slt['fileSuffix'] + t['para_name'] + '.csv'
                            })
         allSltSetList.append(sltset)
     finalSltSetList = []  # 二维数据，每个一元素是一个多个止损目标的参数dic组合
@@ -229,7 +241,7 @@ def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltl
     for sltset in finalSltSetList:
         newfolder = ''
         for sltp in sltset:
-            #newfolder += (sltp['name'] + '_%.3f' % (sltp['sltValue']))
+            # newfolder += (sltp['name'] + '_%.3f' % (sltp['sltValue']))
             v = sltp['sltValue']
             newfolder += "{}_{}".format(sltp['name'], v["para_name"])
         try:
@@ -240,10 +252,9 @@ def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltl
         pool = multiprocessing.Pool(multiprocessing.cpu_count() - 1)
         l = []
         for sn in range(0, paranum):
-            setname = parasetlist.ix[sn, 'Setname']
-            # l.append(msl.multiStopLosslCal(strategyName, symbolInfo, K_MIN, setname, sltset, positionRatio, initialCash,
-            #                           newfolder + '\\'))
-            l.append(pool.apply_async(msl.multiStopLosslCal,
+            setname = parasetlist[sn]
+            #l.append(StopLoss.multi_stop_loss(strategyName, symbolInfo, K_MIN, setname, sltset, barxmdic, result_para_dic, newfolder, indexcols))
+            l.append(pool.apply_async(StopLoss.multi_stop_loss,
                                       (strategyName, symbolInfo, K_MIN, setname, sltset, barxmdic, result_para_dic, newfolder, indexcols)))
         pool.close()
         pool.join()
@@ -267,6 +278,7 @@ def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltl
 
 
 if __name__ == '__main__':
+    time_start = time.time()
     # 参数设置
     strategy_name = Parameter.strategy_name
     strategyParameterSet = []
@@ -283,7 +295,7 @@ if __name__ == '__main__':
         }
         stop_loss_dic = {}
         for k, v in Parameter.stop_loss_para_dic.items():
-            if v[k] == True:
+            if v[k]:
                 stop_loss_dic[k] = v
         paradic['stop_loss_dic'] = stop_loss_dic
         strategyParameterSet.append(paradic)
@@ -330,7 +342,7 @@ if __name__ == '__main__':
         result_para_dic = strategyParameter['result_para_dic']
         stop_loss_dic = strategyParameter['stop_loss_dic']
 
-        symbolinfo = DI.SymbolInfo(domain_symbol, startdate, enddate)
+        symbol_info = DI.SymbolInfo(domain_symbol, startdate, enddate)
 
         symbol_bar_folder_name = Parameter.strategy_folder + "%s %s %s %d" % (
             strategy_name, exchange_id, sec_id, bar_type)
@@ -339,9 +351,25 @@ if __name__ == '__main__':
         # 读取已有参数表
         parasetlist = pd.read_csv(paraset_name)['Setname'].tolist()
 
+        cols = ['open', 'high', 'low', 'close', 'strtime', 'utc_time', 'utc_endtime']
+        bar1m_dic = DI.getBarBySymbolList(domain_symbol, symbol_info.getSymbolList(), 60, startdate, enddate, cols)
+        barxm_dic = DI.getBarBySymbolList(domain_symbol, symbol_info.getSymbolList(), bar_type, startdate, enddate, cols)
+
         if 'multi_sl' in stop_loss_dic.keys():
             # 混合止损模式
-            pass
+            sltlist = []
+            price_tick = symbol_info.getPriceTick()
+            for sl_name, stop_loss in stop_loss_dic.items():
+                if sl_name != 'multi_sl':
+                    stop_loss['price_tick'] = price_tick  # 传入的止损参数中加入price_tick，部分止损方式定价时要用到
+                    stop_loss_class = StopLoss.strategy_mapping_dic[sl_name](stop_loss)
+                    sltlist.append({'name': sl_name,
+                                    'paralist': stop_loss_class.get_para_dic_list(),
+                                    'folderPrefix': stop_loss_class.get_folder_prefix(),
+                                    'fileSuffix':  stop_loss_class.get_file_suffix()
+                                    })
+
+            multi_sl_engine(strategy_name, symbol_info, bar_type, parasetlist, barxm_dic, sltlist, result_para_dic)
         else:
             # 单止损模式
-            pass
+            single_sl_engine(strategy_name, symbol_info, bar_type, parasetlist, stop_loss_dic, result_para_dic, bar1m_dic, barxm_dic, time_start)
