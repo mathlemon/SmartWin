@@ -59,12 +59,12 @@ def single_sl(strategy_name, symbol_info, bar_type, setname, bar1m_dic, barxm_di
     bar1m = bar1m_prepare(bar1m)
     barxm = DI.getDomainbarByDomainSymbol(symbol_info.getSymbolList(), barxm_dic, symbolDomainDic)
 
+    barxm.set_index('utc_time', drop=False, inplace=True)  # 开始时间对齐
+    bar1m.set_index('utc_time', drop=False, inplace=True)
+
     for stop_loss_class in stop_loss_class_list:
         if stop_loss_class.need_data_process_after_domain:
             bar1m, barxm = stop_loss_class.data_process_after_domain(bar1m, barxm)
-
-    barxm.set_index('utc_time', drop=False, inplace=True)  # 开始时间对齐
-    bar1m.set_index('utc_time', drop=False, inplace=True)
 
     positionRatio = result_para_dic['positionRatio']
     initialCash = result_para_dic['initialCash']
