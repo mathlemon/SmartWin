@@ -63,22 +63,27 @@ class HullRsiWin(StrategyTemplate):
         # 计算M金叉和死叉
         raw_data['HullRsi_True'], raw_data['HullRsi_Cross'] = dfCross(raw_data, 'HullRsi', 'zero')
 
+        raw_data['next_strtime'] = raw_data['strtime'].shift(-1).fillna(method='ffill')
+        raw_data['next_open'] = raw_data['open'].shift(-1).fillna(method='ffill')
+        raw_data['next_utc'] = raw_data['utc_time'].shift(-1).fillna(method='ffill')
+        #raw_data['next_index'] = raw_data['Unnamed: 0'].shift(-1).fillna(method='ffill')
+
         # ================================ 找出买卖点================================================
         # 1.先找出SAR金叉的买卖点
         # 2.找到结合判决条件的买点
         # 3.从MA买点中滤出真实买卖点
         # 取出金叉点
-        goldcrosslist = pd.DataFrame({'goldcrosstime': raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'strtime']})
-        goldcrosslist['goldcrossutc'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'utc_time']
+        goldcrosslist = pd.DataFrame({'goldcrosstime': raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'next_strtime']})
+        goldcrosslist['goldcrossutc'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'next_utc']
         goldcrosslist['goldcrossindex'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'Unnamed: 0']
-        goldcrosslist['goldcrossprice'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'close']
+        goldcrosslist['goldcrossprice'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'next_open']
         goldcrosslist['goldcrossrsi'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'RSI_EMA1']
 
         # 取出死叉点
-        deathcrosslist = pd.DataFrame({'deathcrosstime': raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'strtime']})
-        deathcrosslist['deathcrossutc'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'utc_time']
+        deathcrosslist = pd.DataFrame({'deathcrosstime': raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'next_strtime']})
+        deathcrosslist['deathcrossutc'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'next_utc']
         deathcrosslist['deathcrossindex'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'Unnamed: 0']
-        deathcrosslist['deathcrossprice'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'close']
+        deathcrosslist['deathcrossprice'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'next_open']
         deathcrosslist['deathcrossrsi'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'RSI_EMA1']
 
         goldcrosslist = goldcrosslist.reset_index(drop=True)
