@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-'''
-#2017-10-26:
-    增加dfCross(dfx,colum1,colum2)函数，用于计算dfx数据，中colum1和colum2列的交叉情况
-    增加MA(close,MA_Short,MA_Long)函数，用于计算MA df
-'''
+"""
+各类MA计算
+"""
 import pandas as pd
 import numpy as np
 import talib
@@ -110,8 +108,15 @@ def calEMA(data, N=5):
     # ewm的adjust必须设为False，按如下公式算
     # y0 = x0
     # yt= (1−α)yt−1 + αxt,
+    # a = 2/(n+1)
     data = data.ewm(span=N, adjust=False).mean()
     return data
+
+
+def calSMA(data, N=3, M=1):
+    # 在文华的应用公式中，M一般为1
+    a = float(M)/N
+    return data.ewm(alpha=a, adjust=False).mean()
 
 
 def calNewMA(data, N=5):
