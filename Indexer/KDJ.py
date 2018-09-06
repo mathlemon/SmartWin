@@ -21,7 +21,7 @@ def calKDJ(data, N=9, M1=3, M2=3):
     kdj_d = calSMA(kdj_k, M2, 1)
     kdj_j = 3 * kdj_k - 2 * kdj_d
     # kdjdata.fillna(0, inplace=True)
-    return kdj_k, kdj_d,kdj_j
+    return kdj_k, kdj_d, kdj_j
 
 
 def calNewKDJ(data, kdjdata, N=9, M=2):

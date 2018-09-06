@@ -16,7 +16,7 @@ import numpy as np
 import MA
 
 
-def DMI_old(df, N=14, M=6):
+def calDMI(df, N=14, M=6):
     high = df.high
     low = df.low
     close = df.close
@@ -60,6 +60,20 @@ def DMI_old(df, N=14, M=6):
     df1['ADXR'] = (df1['ADX'] + df1['ADX'].shift(M).fillna(0)) / 2
 
     return df1['PDI'], df1['MDI'], df1['ADX'], df1['ADXR']
+
+
+def dmi_true(df1):
+    # 金叉死叉点
+    df1['DMI_True'] = 0
+    df1.loc[df1['PDI'] > df1['MDI'], 'DMI_True'] = 1
+    df1.loc[df1['PDI'] < df1['MDI'], 'DMI_True'] = -1
+
+    df1['bigger1'] = df1['DMI_True'].shift(1).fillna(0)
+    df1['DMI_GOLD_CROSS'] = 0
+    df1.loc[df1['DMI_True'] - df1['bigger1'] > 1, 'DMI_GOLD_CROSS'] = 1
+    df1.loc[df1['DMI_True'] - df1['bigger1'] < -1, 'DMI_GOLD_CROSS'] = -1
+    df1.drop('bigger1', axis=1, inplace=True)
+    return df1['DMI_True']
 
 
 if __name__ == '__main__':

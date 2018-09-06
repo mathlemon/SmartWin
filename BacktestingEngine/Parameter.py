@@ -3,7 +3,7 @@
 策略参数设置
 """
 # 参数设置
-strategy_name = 'HullRsiWin'
+strategy_name = 'LvyiWin'
 exchange_id = 'SHFE'
 sec_id = 'RB'
 K_MIN = 3600
@@ -33,6 +33,13 @@ strategy_para_dic = {
         "M2": [3],
         "N": [6, 10],
         "MaN": [20, 30]
+    },
+    'LvyiWin': {
+        'new_para': True,
+        "MS": [5, 8],
+        "ML": [10, 15],
+        "KDJ_N": [20],
+        "DMI_N": [26, 30]
     }
 }
 # ====================止损控制开关=====================
@@ -50,14 +57,14 @@ stop_loss_para_dic = {
         "ownl_floor": [3]  # ownl地板价：止损线(PT数量）
     },
     "frsl": {
-        "frsl": False,
+        "frsl": True,
         "frsl_target": [-0.01, -0.011, -0.012]  # 固定止损比例
     },
     "gownl": {
-        "gownl": False,
+        "gownl": True,
         "gownl_protect": [0.007, 0.009, 0.011],  # gownl保护触发门限
-        "gownl_floor": [-4, -1, 2, 5],  # gownl地板价起始点
-        "gownl_step": [1, 2]  # gownl地板价递进步伐
+        "gownl_floor": [-4, 5],  # gownl地板价起始点
+        "gownl_step": [1, 3]  # gownl地板价递进步伐
     },
     "pendant": {
         "pendant": False,

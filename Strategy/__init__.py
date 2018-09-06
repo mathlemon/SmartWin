@@ -7,8 +7,10 @@ SmartWin回策框架
 
 from MacdMaWin import MacdMaWin
 from HullRsiWin import HullRsiWin
+from LvyiWin import LvyiWin
 
 strategy_mapping_dic = {
     'MacdMaWin': MacdMaWin,
-    'HullRsiWin': HullRsiWin
+    'HullRsiWin': HullRsiWin,
+    'LvyiWin': LvyiWin
 }
