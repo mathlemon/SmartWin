@@ -77,14 +77,14 @@ class HullRsiWin(StrategyTemplate):
         goldcrosslist['goldcrossutc'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'next_utc']
         goldcrosslist['goldcrossindex'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'Unnamed: 0']
         goldcrosslist['goldcrossprice'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'next_open']
-        goldcrosslist['goldcrossrsi'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'RSI_EMA1']
+        #goldcrosslist['goldcrossrsi'] = raw_data.loc[raw_data['HullRsi_Cross'] == 1, 'RSI_EMA1']
 
         # 取出死叉点
         deathcrosslist = pd.DataFrame({'deathcrosstime': raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'next_strtime']})
         deathcrosslist['deathcrossutc'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'next_utc']
         deathcrosslist['deathcrossindex'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'Unnamed: 0']
         deathcrosslist['deathcrossprice'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'next_open']
-        deathcrosslist['deathcrossrsi'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'RSI_EMA1']
+        #deathcrosslist['deathcrossrsi'] = raw_data.loc[raw_data['HullRsi_Cross'] == -1, 'RSI_EMA1']
 
         goldcrosslist = goldcrosslist.reset_index(drop=True)
         deathcrosslist = deathcrosslist.reset_index(drop=True)
@@ -121,8 +121,8 @@ class HullRsiWin(StrategyTemplate):
                                 'deathcrosstime': 'closetime',
                                 'deathcrossutc': 'closeutc',
                                 'deathcrossindex': 'closeindex',
-                                'deathcrossprice': 'closeprice',
-                                'deathcrossrsi': 'close_rsi'}, inplace=True)
+                                'deathcrossprice': 'closeprice'
+                                }, inplace=True)
 
         # 从空仓序列中取出开空序号的内容，即为开空操作
         shortopr = shortcrosslist.loc[openshortindex]
@@ -135,8 +135,8 @@ class HullRsiWin(StrategyTemplate):
                                  'goldcrosstime': 'closetime',
                                  'goldcrossutc': 'closeutc',
                                  'goldcrossindex': 'closeindex',
-                                 'goldcrossprice': 'closeprice',
-                                 'goldcrossrsi': 'close_rsi'}, inplace=True)
+                                 'goldcrossprice': 'closeprice'
+                                 }, inplace=True)
 
         # 结果分析
         result = pd.concat([longopr, shortopr])
