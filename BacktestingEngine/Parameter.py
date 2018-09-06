@@ -86,29 +86,44 @@ forwardWinEnd = 12
 # 止损类型开关
 multiSTL_forward = True  # 多止损混合推进开关（忽略common模式）
 common_forward = False  # 普通回测结果推进
-calcDsl_forward = False  # dsl动态止损开关
-dsl_target_list_forward = [-0.018, -0.02, -0.022]
 
-calcOwnl_forward = False  # ownl有赚不亏开关
-ownl_protect_list_forward = [0.008, 0.009, 0.010, 0, 011]  # ownl保护触发门限
-ownl_floor_list_forward = [3]  # ownl地板价：止损线(PT数量）
-
-calcGownl_forward = True  # gownl递进式有赚不亏开关
-gownl_protect_list_forward = [0.007, 0.009, 0.011]  # gownl保护触发门限
-gownl_floor_list_forward = [-4, -1, 2, 5]  # gownl地板价起始点
-gownl_step_list_forward = [1, 2]  # gownl地板价递进步伐
-
-calcFrsl_forward = False  # frsl固定比例止损开关
-frsl_target_list_forward = [-0.01, -0.011, -0.012]  # 固定止损比例
-
-calcAtrsl_forward = False  # atrsl ATR吊灯和yoyo止损开关
-atr_pendant_n_list_forward = [5, 8]  # 吊灯atr的n值
-atr_pendant_rate_list_forward = [1.0, 1.5, 2.0]  # 吊灯atr的最大回撤止损atr比例
-atr_yoyo_n_list_forward = [8, 16, 30]  # yoyo的atr n值
-atr_yoyo_rate_list_forward = [1, 1.2, 1.5]  # yoyo的止损atr比例
-
-progress_forward = False  # 增量模式开关
-calcMultiSLT_forward = False  # 混合止损开关
+forward_mode_para_dic = {
+    "multi_sl": {
+        "multi_sl": False  # 混合止损开关
+    },
+    "common": {
+        "common": False     # 普通回测结果推进
+    },
+    "dsl": {
+        "dsl": True,  # 动态止损开关
+        "dsl_target": [-0.018, -0.02, -0.022]
+    },
+    "ownl": {
+        "ownl": False,
+        "ownl_protect": [0.008, 0.009, 0.010, 0.011],  # ownl保护触发门限
+        "ownl_floor": [3]  # ownl地板价：止损线(PT数量）
+    },
+    "frsl": {
+        "frsl": True,
+        "frsl_target": [-0.01, -0.011, -0.012]  # 固定止损比例
+    },
+    "gownl": {
+        "gownl": True,
+        "gownl_protect": [0.007, 0.009, 0.011],  # gownl保护触发门限
+        "gownl_floor": [-4, 5],  # gownl地板价起始点
+        "gownl_step": [1, 3]  # gownl地板价递进步伐
+    },
+    "pendant": {
+        "pendant": False,
+        "pendant_n": [3, 5, 7],  # 吊灯atr的n值
+        "pendant_rate": [1.0, 1.5, 2.0]  # 吊灯atr的最大回撤止损atr比例
+    },
+    "yoyo": {
+        "yoyo": False,
+        "yoyo_n": [8, 16, 30],  # yoyo的atr n值
+        "yoyo_rate": [1, 1.2, 1.5]  # yoyo的止损atr比例
+    }
+}
 
 # ==================每月参数计算=====================
 # newmonth='2018-05'#要生成参数的新月份
