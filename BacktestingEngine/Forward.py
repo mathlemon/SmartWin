@@ -9,8 +9,7 @@ import Parameter
 import StopLoss
 
 
-def get_forward(strategyName, symbolinfo, K_MIN, parasetlist, rawdatapath, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
-               resultfilesuffix):
+def get_forward(strategyName, symbolinfo, K_MIN, parasetlist, rawdatapath, startdate, enddate, colslist, result_para_dic, indexcolsFlag, resultfilesuffix):
     forward_window_set = range(Parameter.forwardWinStart, Parameter.forwardWinEnd + 1)  # 白区窗口值
     nextmonth = enddate[0:7]
     symbol = symbolinfo.domain_symbol
@@ -160,8 +159,7 @@ if __name__ == '__main__':
         bar_type = strategyParameter['K_MIN']
         startdate = strategyParameter['startdate']
         enddate = strategyParameter['enddate']
-        # nextmonth = strategyParameter['nextmonth']
-        nextmonth = enddate[:7]
+
         symbol = '.'.join([exchange_id, sec_id])
 
         result_para_dic = strategyParameter['result_para_dic']

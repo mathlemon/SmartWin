@@ -22,7 +22,7 @@ def calWhiteResult(strategyName, whiteWindows, symbolinfo, K_MIN, parasetlist, m
     '''
     print ('WhiteWindows:%d calculating forward result.' % whiteWindows)
     symbol = symbolinfo.domain_symbol
-    parasetlen = parasetlist.shape[0]
+    parasetlen = len(parasetlist)
     annual_total_list = []
     sharpe_total_list = []
     success_rate_total_list = []
@@ -32,8 +32,8 @@ def calWhiteResult(strategyName, whiteWindows, symbolinfo, K_MIN, parasetlist, m
     retr_col = columns['retr_col']
     ret_col = columns['ret_col']
 
-    for i in np.arange(0, parasetlen):
-        setname = parasetlist.ix[i, 'Setname']
+    for i in range(parasetlen):
+        setname = parasetlist[i]
         # print setname
         filename = datapath + strategyName + ' ' + symbol + str(K_MIN) + ' ' + setname + ' ' + filesuffix
         resultdf = pd.read_csv(filename)
@@ -49,9 +49,9 @@ def calWhiteResult(strategyName, whiteWindows, symbolinfo, K_MIN, parasetlist, m
         sharpe_list.append(setname)
         success_rate_list.append(setname)
         drawback_list.append(setname)
-        for i in range(12, len(monthlist) - 1):  # 修改为从第13个月开始
-            whiteWindowsStart = monthlist[i - whiteWindows] + '-01 00:00:00'
-            whiteWindowsEnd = monthlist[i] + '-01 00:00:00'  # 从取end月份的1日，表示的是i-1个月的数据
+        for l in range(12, len(monthlist) - 1):  # 修改为从第13个月开始
+            whiteWindowsStart = monthlist[l - whiteWindows] + '-01 00:00:00'
+            whiteWindowsEnd = monthlist[l] + '-01 00:00:00'  # 从取end月份的1日，表示的是i-1个月的数据
             startutc = float(time.mktime(time.strptime(whiteWindowsStart, "%Y-%m-%d %H:%M:%S")))
             endutc = float(time.mktime(time.strptime(whiteWindowsEnd, "%Y-%m-%d %H:%M:%S")))
             resultdata = resultdf.loc[(resultdf['openutc'] >= startutc) & (resultdf['openutc'] < endutc)]
@@ -374,7 +374,7 @@ def getMonthParameter(strategyName, startmonth, endmonth, symbolinfo, K_MIN, par
     '''
     print ('Calculating month parameters,start from %s to %s' % (startmonth, endmonth))
     symbol = symbolinfo.domain_symbol
-    parasetlen = parasetlist.shape[0]
+    parasetlen = len(parasetlist)
     closeutc_col = columns['closeutc_col']
     retr_col = columns['retr_col']
     ret_col = columns['ret_col']
@@ -385,7 +385,7 @@ def getMonthParameter(strategyName, startmonth, endmonth, symbolinfo, K_MIN, par
     drawback_list = []
     set_list = []
     for i in np.arange(0, parasetlen):
-        setname = parasetlist.ix[i, 'Setname']
+        setname = parasetlist[i]
         print setname
         filename = oprresultpath + strategyName + ' ' + symbol + str(K_MIN) + ' ' + setname + resultfilesuffix
         resultdf = pd.read_csv(filename)
