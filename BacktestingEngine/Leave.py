@@ -245,8 +245,8 @@ def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltl
         newfolder = ''
         for sltp in sltset:
             # newfolder += (sltp['name'] + '_%.3f' % (sltp['sltValue']))
-            v = sltp['sltValue']
-            newfolder += "{}_{}".format(sltp['name'], v["para_name"])
+            v = dict(sltp['sltValue'])
+            newfolder += "{}_{}".format(sltp['name'], v['para_name'])
         try:
             os.mkdir(newfolder)  # 创建文件夹
         except:
@@ -321,14 +321,14 @@ if __name__ == '__main__':
             stop_loss_dic = {}
             for k, v in Parameter.stop_loss_para_dic.items():
                 enable = symbolset.ix[i, k]
-                sub_stop_loss_dic = {}
                 if enable:
-                    for k1 in v.values():
+                    sub_stop_loss_dic = {}
+                    for k1 in v.keys():
                         if k1 == k:
                             sub_stop_loss_dic[k1] = True
                         else:
                             sub_stop_loss_dic[k1] = Parameter.para_str_to_float(symbolset.ix[i, k1])
-                stop_loss_dic[k] = sub_stop_loss_dic
+                    stop_loss_dic[k] = sub_stop_loss_dic
             para_dic['stop_loss_dic'] = stop_loss_dic
             strategyParameterSet.append(para_dic)
 

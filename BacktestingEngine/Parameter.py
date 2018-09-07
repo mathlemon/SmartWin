@@ -2,8 +2,10 @@
 """
 策略参数设置
 """
+import numpy
+
 # 参数设置
-strategy_name = 'LvyiWin'
+strategy_name = 'HullRsiWin'
 exchange_id = 'SHFE'
 sec_id = 'RB'
 K_MIN = 3600
@@ -45,7 +47,7 @@ strategy_para_dic = {
 # ====================止损控制开关=====================
 stop_loss_para_dic = {
     "multi_sl": {
-        "multi_sl": False  # 混合止损开关
+        "multi_sl": True  # 混合止损开关
     },
     "dsl": {
         "dsl": True,  # 动态止损开关
@@ -78,25 +80,21 @@ stop_loss_para_dic = {
     }
 }
 
-# =============推进控制开关===================
-# nextMonthName='18-05'
-forwardWinStart = 1
-forwardWinEnd = 12
-
-# 止损类型开关
-multiSTL_forward = True  # 多止损混合推进开关（忽略common模式）
-common_forward = False  # 普通回测结果推进
+# ====================推进控制开关===================
+forwardWinStart = 5
+forwardWinEnd = 8
+month_n = 7  # n+x的n值，即往前推多少个月
 
 forward_mode_para_dic = {
     "multi_sl": {
         "multi_sl": False  # 混合止损开关
     },
     "common": {
-        "common": False     # 普通回测结果推进
+        "common": False  # 普通回测结果推进
     },
     "dsl": {
         "dsl": True,  # 动态止损开关
-        "dsl_target": [-0.018, -0.02, -0.022]
+        "dsl_target": [-0.018]
     },
     "ownl": {
         "ownl": False,
@@ -104,11 +102,11 @@ forward_mode_para_dic = {
         "ownl_floor": [3]  # ownl地板价：止损线(PT数量）
     },
     "frsl": {
-        "frsl": True,
+        "frsl": False,
         "frsl_target": [-0.01, -0.011, -0.012]  # 固定止损比例
     },
     "gownl": {
-        "gownl": True,
+        "gownl": False,
         "gownl_protect": [0.007, 0.009, 0.011],  # gownl保护触发门限
         "gownl_floor": [-4, 5],  # gownl地板价起始点
         "gownl_step": [1, 3]  # gownl地板价递进步伐
@@ -125,9 +123,16 @@ forward_mode_para_dic = {
     }
 }
 
-# ==================每月参数计算=====================
-# newmonth='2018-05'#要生成参数的新月份
-month_n = 7  # n+x的n值，即往前推多少个月
+# ====================系统参数==================================
+# 1.品种和周期组合文件
+symbol_KMIN_set_filename = strategy_name + '_multi_symbol_setting_bt.xlsx'
+# 2.第一步的结果中挑出满足要求的项，做成双止损组合文件
+stoploss_set_filename = strategy_name + '_multi_symbol_setting_stoploss.xlsx'
+# 3.从第二步的结果中挑出满足要求的项，做推进
+forward_set_filename = strategy_name + '_multi_symbol_setting_forward'
+
+root_path = 'D:\\BT_Results\\'
+strategy_folder = "%s%s\\" % (root_path, strategy_name)
 
 # =================结果指标开关====================
 ResultIndexDic = [
@@ -155,23 +160,13 @@ ResultIndexDic = [
     "AveSuccessiveLoss"  # 平均连续亏损次数'
 ]
 
-# 1.品种和周期组合文件
-symbol_KMIN_set_filename = strategy_name + '_mulit_symbol_setting_bt.xlsx'
-# 2.第一步的结果中挑出满足要求的项，做成双止损组合文件
-stoploss_set_filename = strategy_name + '_stoploss_set.xlsx'
-# 3.从第二步的结果中挑出满足要求的项，做推进
-forward_set_filename = strategy_name + '_forward_set.xlsx'
-
-# ====================系统参数==================================
-root_path = 'D:\\BT_Results\\'
-strategy_folder = "%s%s\\" % (root_path, strategy_name)
-
 
 # ===================== 通用功能函数 =========================================
 def para_str_to_float(para_str):
     # 功能函数：用于将从多品种多周期文件读取进来的字符串格式的参数列表转换为符点型列表
+    p_type = type(para_str)
     para_float_list = []
-    if type(para_str) != 'str':
+    if p_type == numpy.int64 or p_type == numpy.float64 or p_type == float:
         para_float_list.append(float(para_str))
     else:
         for x in para_str.split(','):
@@ -183,10 +178,9 @@ def para_str_to_int(para_str):
     # 功能函数：用于将从多品种多周期文件读取进来的字符串格式的参数列表转换为符点型列表
     para_float_list = []
     p_type = type(para_str)
-    if p_type == int or p_type == long:
+    if p_type == numpy.int64 or p_type == numpy.float64 or p_type == float:
         para_float_list.append(int(para_str))
     else:
         for x in para_str.split(','):
             para_float_list.append(int(x))
     return para_float_list
-

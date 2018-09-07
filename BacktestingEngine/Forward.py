@@ -41,9 +41,9 @@ def get_forward(strategyName, symbolinfo, K_MIN, parasetlist, rawdatapath, start
     pool = multiprocessing.Pool(multiprocessing.cpu_count() - 1)
     l = []
     for whiteWindows in forward_window_set:
-        # l.append(mtf.runPara(strategyName,whiteWindows, symbolinfo, K_MIN, parasetlist, monthlist, rawdatapath, forwordresultpath, forwardrankpath, colslist, resultfilesuffix))
+        # l.append(mtf.runPara(strategyName, whiteWindows, symbolinfo, K_MIN, parasetlist, monthlist, rawdatapath, forwordresultpath, forwardrankpath, colslist, resultfilesuffix))
         l.append(pool.apply_async(mtf.runPara, (
-        strategyName, whiteWindows, symbolinfo, K_MIN, parasetlist, monthlist, rawdatapath, forwordresultpath, forwardrankpath, colslist, resultfilesuffix)))
+            strategyName, whiteWindows, symbolinfo, K_MIN, parasetlist, monthlist, rawdatapath, forwordresultpath, forwardrankpath, colslist, resultfilesuffix)))
     pool.close()
     pool.join()
     mtf.calGrayResult(strategyName, symbol, K_MIN, forward_window_set, forwardrankpath, rawdatapath)
@@ -73,7 +73,7 @@ def get_mix_forward(strategyName, sltlist, symbolinfo, K_MIN, parasetlist, folde
         sltset = []
         for t in slt['paralist']:
             sltset.append({'name': slt['name'],
-                           'sltValue': t,   # t是一个参数字典
+                           'sltValue': t,  # t是一个参数字典
                            'folder': ("%s%s\\" % (slt['folderPrefix'], t['para_name'])),
                            'fileSuffix': slt['fileSuffix'] + t['para_name'] + '.csv'
                            })
@@ -92,7 +92,7 @@ def get_mix_forward(strategyName, sltlist, symbolinfo, K_MIN, parasetlist, folde
     for sltset in finalSltSetList:
         newfolder = ''
         for sltp in sltset:
-            v = sltp['sltValue']
+            v = dict(sltp['sltValue'])
             newfolder += "{}_{}".format(sltp['name'], v["para_name"])
         rawdatapath = folderpath + newfolder + '\\'
         print ("multiSTL Target:%s" % newfolder)
@@ -140,14 +140,14 @@ if __name__ == '__main__':
             forward_mode_dic = {}
             for k, v in Parameter.forward_mode_para_dic.items():
                 enable = symbolset.ix[i, k]
-                sub_stop_loss_dic = {}
                 if enable:
-                    for k1 in v.values():
+                    sub_stop_loss_dic = {}
+                    for k1 in v.keys():
                         if k1 == k:
                             sub_stop_loss_dic[k1] = True
                         else:
                             sub_stop_loss_dic[k1] = Parameter.para_str_to_float(symbolset.ix[i, k1])
-                forward_mode_dic[k] = sub_stop_loss_dic
+                    forward_mode_dic[k] = sub_stop_loss_dic
             symbol_para_dic['forward_mode_dic'] = forward_mode_dic
             strategyParameterSet.append(symbol_para_dic)
 
@@ -166,7 +166,8 @@ if __name__ == '__main__':
         forward_mode_dic = strategyParameter['forward_mode_dic']
 
         symbol_info = DI.SymbolInfo(symbol, startdate, enddate)
-        symbol_bar_folder_name = Parameter.strategy_folder + "%s %s %s %d" % (
+        price_tick = symbol_info.getPriceTick()
+        symbol_bar_folder_name = Parameter.strategy_folder + "%s %s %s %d\\" % (
             strategy_name, exchange_id, sec_id, bar_type)
         os.chdir(symbol_bar_folder_name)
         paraset_name = "%s %s %s %d Parameter.csv" % (strategy_name, exchange_id, sec_id, bar_type)
@@ -176,6 +177,7 @@ if __name__ == '__main__':
         sltlist = []
         for sl_name, stop_loss in forward_mode_dic.items():
             if sl_name != 'multi_sl' and sl_name != 'common':  # 混合标志和普通模式标志都是不带参数的
+                stop_loss['price_tick'] = price_tick
                 stop_loss_class = StopLoss.strategy_mapping_dic[sl_name](stop_loss)
                 sltlist.append({'name': sl_name,
                                 'paralist': stop_loss_class.get_para_dic_list(),
@@ -193,7 +195,7 @@ if __name__ == '__main__':
                 indexcolsFlag = False
                 bt_folder = symbol_bar_folder_name + "%s %d backtesting\\" % (symbol, bar_type)
                 get_forward(strategyName, symbol_info, bar_type, parasetlist, bt_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
-                   resultfilesuffix)
+                            resultfilesuffix)
             for slt in sltlist:
                 colslist = mtf.getColumnsName(False)
                 resultfilesuffix = slt['fileSuffix']
@@ -201,6 +203,6 @@ if __name__ == '__main__':
                 indexcolsFlag = False
                 for stop_loss_para_dic in slt['paralist']:
                     para_name = stop_loss_para_dic['para_name']
-                    raw_folder = symbol_bar_folder_name + "%s%s" % (folder_prefix, para_name)
+                    raw_folder = symbol_bar_folder_name + "%s%s\\" % (folder_prefix, para_name)
                     get_forward(strategyName, symbol_info, bar_type, parasetlist, raw_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
-                       resultfilesuffix+para_name+'.csv')
+                                resultfilesuffix + para_name + '.csv')
