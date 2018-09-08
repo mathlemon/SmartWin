@@ -87,7 +87,7 @@ class YoyoStopLoss(StopLossTemplate):
                     if rows2.shape[0] > 0:
                         temp2 = rows2.iloc[0]
                         sl_price = temp2['last_close'] + temp2['yoyo_value']
-                        fprice = sl_price // self.price_tick * self.price_tick + max(self.price_tick, sl_price % self.price_tick)
+                        fprice = sl_price // self.price_tick * self.price_tick + self.price_tick
                         strtime = temp2['strtime']
                         utctime = temp2['utc_time']
                         result_dic[para_name] = {

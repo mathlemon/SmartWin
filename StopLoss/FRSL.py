@@ -71,7 +71,7 @@ class FrslStopLoss(StopLossTemplate):
                 if df2.shape[0] > 0:
                     temp = df2.iloc[0]
                     pprice = open_price * (1 - frsl_target_value)
-                    close_price = pprice // self.price_tick * self.price_tick + max(self.price_tick, pprice % self.price_tick)
+                    close_price = pprice // self.price_tick * self.price_tick + self.price_tick
                     strtime = temp['strtime']
                     utctime = temp['utc_time']
                     result_dic[frsl_target['para_name']] = {

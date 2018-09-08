@@ -92,7 +92,7 @@ class PendantStopLoss(StopLossTemplate):
                     if rows.shape[0] > 0:
                         temp = rows.iloc[0]
                         sl_price = temp['min2here'] + temp['pendant_value']  # 这个止损价格还需要再基于price tick做向上取整处理
-                        fprice = sl_price // self.price_tick * self.price_tick + max(self.price_tick, sl_price % self.price_tick)
+                        fprice = sl_price // self.price_tick * self.price_tick + self.price_tick
                         strtime = temp['strtime']
                         utctime = temp['utc_time']
                         result_dic[para_name] = {

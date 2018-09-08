@@ -81,7 +81,7 @@ class DslStopLoss(StopLossTemplate):
                     strtime = temp['strtime']
                     utctime = temp['utc_time']
                     pprice = maxprice * (1 - dsl_target_value)
-                    close_price = pprice // self.price_tick * self.price_tick + max(self.price_tick, pprice % self.price_tick)
+                    close_price = pprice // self.price_tick * self.price_tick + self.price_tick
                     result_dic[dsl_target['para_name']] = {
                         "new_closeprice": close_price,
                         "new_closetime": strtime,
