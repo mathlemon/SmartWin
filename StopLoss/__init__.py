@@ -9,11 +9,13 @@ from DSL import DslStopLoss
 from FRSL import FrslStopLoss
 from GOWNL import GownlStopLoss
 from PENDANT import PendantStopLoss
+from YOYO import YoyoStopLoss
 from MultiStopLoss import multi_stop_loss
 
 strategy_mapping_dic = {
     'dsl': DslStopLoss,
     'frsl': FrslStopLoss,
     'gownl': GownlStopLoss,
-    'pendant': PendantStopLoss
+    'pendant': PendantStopLoss,
+    'yoyo': YoyoStopLoss
 }

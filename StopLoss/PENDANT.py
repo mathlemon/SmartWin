@@ -113,19 +113,24 @@ class PendantStopLoss(StopLossTemplate):
 
     def data_process_before_domain(self, bar1m_dic, barxm_dic):
         for symbol, barxm in barxm_dic.items():
+            barxm_cloumns = barxm.columns.tolist()
             for n in self.pendant_n_list:
-                barxm['atr_%d' % n] = ATR.ATR(barxm.high, barxm.low, barxm.close, n)
+                cols_name = 'atr_%d' % n
+                if cols_name not in barxm_cloumns:  # 如果打开了yoyo且n值相同，则不重复计算
+                    barxm[cols_name] = ATR.ATR(barxm.high, barxm.low, barxm.close, n)
         return bar1m_dic, barxm_dic
 
-    def data_process_after_domain(self, domin_bar_1m, domain_bar_xm):
-        domin_bar_1m.set_index('utc_endtime', drop=False, inplace=True)
-        domin_bar_1m.set_index('utc_endtime', drop=False, inplace=True)
+    def data_process_after_domain(self, domain_bar_1m, domain_bar_xm):
+        domain_bar_1m.set_index('utc_endtime', drop=False, inplace=True)
+        domain_bar_1m.set_index('utc_endtime', drop=False, inplace=True)
+        bar_1m_columns = domain_bar_1m.columns.tolist()
         for n in self.pendant_n_list:
             cols_name = 'atr_%d' % n
-            domin_bar_1m[cols_name] = domain_bar_xm[cols_name]
-            domin_bar_1m[cols_name] = domin_bar_1m[cols_name].shift(1)
-        domin_bar_1m.fillna(method='ffill', inplace=True)
+            if cols_name not in bar_1m_columns:   # 如果打开了yoyo且n值相同，则不重复计算
+                domain_bar_1m[cols_name] = domain_bar_xm[cols_name]
+                domain_bar_1m[cols_name] = domain_bar_1m[cols_name].shift(1)
+        domain_bar_1m.fillna(method='ffill', inplace=True)
 
         domain_bar_xm.set_index('utc_time', drop=False, inplace=True)  # 开始时间对齐
-        domin_bar_1m.set_index('utc_time', drop=False, inplace=True)
-        return domin_bar_1m, domain_bar_xm
+        domain_bar_1m.set_index('utc_time', drop=False, inplace=True)
+        return domain_bar_1m, domain_bar_xm
