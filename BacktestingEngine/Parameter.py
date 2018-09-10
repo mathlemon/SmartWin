@@ -132,7 +132,7 @@ stoploss_set_filename = strategy_name + '_multi_symbol_setting_stoploss.xlsx'
 forward_set_filename = strategy_name + '_multi_symbol_setting_forward'
 
 root_path = 'D:\\BT_Results\\'
-strategy_folder = "%s%s\\" % (root_path, strategy_name)
+strategy_folder = "%s%s\\" % (root_path, strategy_name)     # 每个策略对应一个文件夹
 
 # =================结果指标开关====================
 ResultIndexDic = [

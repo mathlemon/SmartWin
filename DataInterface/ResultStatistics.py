@@ -19,7 +19,6 @@ import pandas as pd
 from pandas import Series
 from datetime import date, timedelta
 import numpy as np
-import DATA_CONSTANTS as DC
 
 
 def annual_return(resultdf, cash_col='own cash', closeutc_col='closeutc', openutc_col='openutc'):
