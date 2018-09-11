@@ -101,7 +101,7 @@ def getBarBySymbolList(domain_symbol, symbollist, bar_type, startdate=None, endd
         bardic[symbol] = bardf.reset_index(drop=True)
     return bardic
 
-def getBarDic(symbolinfo, bar_type,cols=None):
+def getBarDicAfterDomain(symbolinfo, bar_type,cols=None):
     # 取全部主力合约的数据，以dic的形式返回
     domain_symbol = symbolinfo.domain_symbol
     symbollist = symbolinfo.getSymbolList()

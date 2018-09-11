@@ -247,7 +247,7 @@ def annual(resultdf, new=False):
 
 
 def sharpe(resultdf, new=False):
-    '''夏普比率'''
+    """夏普比率"""
     rf = 0.0284
     if new:
         retr_col = 'return'

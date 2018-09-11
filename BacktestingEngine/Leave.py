@@ -355,7 +355,8 @@ if __name__ == '__main__':
         parasetlist = pd.read_csv(paraset_name)['Setname'].tolist()
 
         cols = ['open', 'high', 'low', 'close', 'strtime', 'utc_time', 'utc_endtime']
-        bar1m_dic = DI.getBarBySymbolList(domain_symbol, symbol_info.getSymbolList(), 60, startdate, enddate, cols)
+        #bar1m_dic = DI.getBarBySymbolList(domain_symbol, symbol_info.getSymbolList(), 60, startdate, enddate, cols)
+        bar1m_dic = DI.getBarDicAfterDomain(symbol_info, 60, cols)
         barxm_dic = DI.getBarBySymbolList(domain_symbol, symbol_info.getSymbolList(), bar_type, startdate, enddate, cols)
 
         if 'multi_sl' in stop_loss_dic.keys():
