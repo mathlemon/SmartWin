@@ -5,6 +5,8 @@ SmartWin回策框架
 作者:Smart
 新建时间：2018-09-02
 """
+
+
 class StrategyTemplate(object):
     """
     策略基础模板

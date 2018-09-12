@@ -130,7 +130,7 @@ def getParallelResult(strategyParameter, strategy_class, parasetlist, paranum, i
     for res in l:
         resultlist.loc[i] = res.get()
         i += 1
-    finalresults = ("%s %s %d finalresults.csv" % (strategyName, domain_symbol, K_MIN))
+    finalresults = ("%s %s %d finalresult.csv" % (strategyName, domain_symbol, K_MIN))
     resultlist.to_csv(finalresults)
     return resultlist
 

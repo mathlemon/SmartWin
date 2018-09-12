@@ -13,7 +13,7 @@ result_para_dic = {  # 结果计算相关参数
 }
 # ============================ 单品种模式参数 =======================================================
 # 参数设置
-strategy_name = 'MacdMaWin'
+strategy_name = 'HullRsiWin'
 exchange_id = 'SHFE'
 sec_id = 'AL'
 K_MIN = 3600
@@ -132,12 +132,10 @@ forward_mode_para_dic = {
 }
 
 # ====================系统参数==================================
-# 1.品种和周期组合文件
-symbol_KMIN_set_filename = strategy_name + '_multi_symbol_setting_bt.xlsx'
-# 2.第一步的结果中挑出满足要求的项，做成双止损组合文件
-stoploss_set_filename = strategy_name + '_multi_symbol_setting_stoploss.xlsx'
-# 3.从第二步的结果中挑出满足要求的项，做推进
-forward_set_filename = strategy_name + '_multi_symbol_setting_forward'
+symbol_KMIN_set_filename = strategy_name + '_multi_symbol_setting_bt.xlsx'  # 多品种回测控制表
+stoploss_set_filename = strategy_name + '_multi_symbol_setting_stoploss.xlsx'   # 多品种止损控制表
+forward_set_filename = strategy_name + '_multi_symbol_setting_forward.xlsx'      # 多品种推进控制表
+bt_parameter_optimize_polt_filename = strategy_name + '_backtesting_parameter_plot.xlsx'    # 多品种回测参数优化绘图用
 
 root_path = 'D:\\BT_Results\\'
 strategy_folder = "%s%s\\" % (root_path, strategy_name)     # 每个策略对应一个文件夹
