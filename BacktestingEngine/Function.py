@@ -39,7 +39,9 @@ def calc_single_final_result(domain_symbol, bar_type, folder_name):
         para_name = folder_name
         for s in indexcols:
             new_indexcols.append('new_' + s)
-    resultlist = pd.DataFrame(columns=['Setname', 'para_name', 'worknum'] + indexcols + new_indexcols)
+        resultlist = pd.DataFrame(columns=['Setname', 'para_name', 'worknum'] + indexcols + new_indexcols)
+    else:
+        resultlist = pd.DataFrame(columns=['Setname'] + indexcols)
     bt_folder = "%s.%s %d backtesting\\" % (exchange_id, sec_id, bar_type)
     i = 0
     for setname in parasetlist:
@@ -47,8 +49,6 @@ def calc_single_final_result(domain_symbol, bar_type, folder_name):
         bt_result = pd.read_csv((bt_folder + strategy_name + ' ' + domain_symbol + str(bar_type) + ' ' + setname + ' result.csv'))
         bt_daily_close = pd.read_csv((bt_folder + strategy_name + ' ' + domain_symbol + str(bar_type) + ' ' + setname + ' dailyresult.csv'))
         bt_results = RS.getStatisticsResult(bt_result, False, indexcols, bt_daily_close)
-        work_num = 0
-        newr = []
         if new_flag:
             opr_file_name = "\\%s %s%d %s %s" % (strategy_name, domain_symbol, bar_type, setname, file_suffix)
             sl_reslt = pd.read_csv(folder_name + opr_file_name)
@@ -56,7 +56,9 @@ def calc_single_final_result(domain_symbol, bar_type, folder_name):
             sl_dailyClose = pd.read_csv(folder_name + opr_dialy_k_file_name)
             newr = RS.getStatisticsResult(sl_reslt, True, indexcols, sl_dailyClose)
             work_num = sl_reslt.loc[sl_reslt['new_closeutc'] != sl_reslt['closeutc']].shape[0]
-        resultlist.loc[i] = [setname, para_name, work_num] + bt_results + newr  # 在这里附上setname
+            resultlist.loc[i] = [setname, para_name, work_num] + bt_results + newr  # 在这里附上setname
+        else:
+            resultlist.loc[i] = [setname] + bt_results
         i += 1
     finalresults = ("%s %s %d final%s" % (strategy_name, domain_symbol, bar_type, file_suffix))
     resultlist.to_csv(finalresults)
@@ -75,17 +77,17 @@ def re_concat_close_all_final_result(domain_symbol, bar_type, sl_type):
     symbol_folder = "%s %s %s %d" % (Parameter.strategy_name, exchange_id, sec_id, bar_type)
     os.chdir(strategy_folder + symbol_folder)
     sl_para_dic = Parameter.stop_loss_para_dic[sl_type]
+    sl_para_dic['price_tick'] = 0
     stop_loss_class = StopLoss.strategy_mapping_dic[sl_type](sl_para_dic)
     stop_loss_para_list = stop_loss_class.get_para_dic_list()
     folder_prefix = stop_loss_class.get_folder_prefix()
-    file_suffix = stop_loss_class.get_file_suffix()
     final_result_list = []
     for stop_loss_para in stop_loss_para_list:
         para_name = stop_loss_para['para_name']
         folder_name = "%s%s\\" % (folder_prefix, para_name)
         print folder_name
         final_result_name = "%s %s%d finalresult_%s%s.csv" % (
-            Parameter.strategy_name, domain_symbol, bar_type, file_suffix, para_name)
+            Parameter.strategy_name, domain_symbol, bar_type, sl_type, para_name)
         final_result_file = pd.read_csv("%s\\%s" % (folder_name, final_result_name))
         final_result_list.append(final_result_file)
     all_final_result_file = pd.concat(final_result_list)
@@ -104,7 +106,7 @@ def re_concat_multi_symbol_final_result():
     multi_symbol_df = pd.read_excel(Parameter.symbol_KMIN_set_filename)
     all_final_result_list = []
     for n, row in multi_symbol_df.iterrows():
-        strategy_name = row['strategyName']
+        strategy_name = row['strategy_name']
         exchange_id = row['exchange_id']
         sec_id = row['sec_id']
         bar_type = row['K_MIN']
@@ -215,7 +217,7 @@ if __name__ == "__main__":
     :param bar_type: 周期
     :param folder_name: 结果文件夹
     """
-    # calc_single_final_result(domain_symbol='SHFE.RB', bar_type=3600, folder_name='dsl-0.018')
+    #calc_single_final_result(domain_symbol='SHFE.RB', bar_type=3600, folder_name='SHFE.RB 3600 backtesting')
 
     """
     重新汇总某一止损类型所有参数的final_result， 止损的参数自动从Parameter中读
@@ -224,7 +226,7 @@ if __name__ == "__main__":
     :param sl_type: 止损类型 'dsl', 'ownl', 'frsl', 'gownl', 'pendant', 'yoyo'
     :return:
     """
-    # re_concat_close_all_final_result(domain_symbol='SHFE.RB', bar_type=3600, sl_type='dsl')
+    #re_concat_close_all_final_result(domain_symbol='SHFE.RB', bar_type=3600, sl_type='dsl')
 
     """
     重新汇总多品种回测的final_result结果，自动从_multi_symbol_setting_bt.xlsx文件读取品种列表
@@ -237,4 +239,4 @@ if __name__ == "__main__":
     # calResultByPeriod()
 
     """绘制finalresult结果中参数对应的end cash分布柱状图,自动从_backtesting_parameter_plot.xlsx读品种列表"""
-    plot_parameter_result_pic()
+    # plot_parameter_result_pic()
