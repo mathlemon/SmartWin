@@ -26,8 +26,8 @@ class MacdMaWin(StrategyTemplate):
         # print setname
         raw_data['Unnamed: 0'] = range(raw_data.shape[0])
         # 计算MACD
-        # macd = MA.calMACD(raw_data['close'], MACD_S, MACD_L, MACD_M)   # 普通MACD
-        macd = MACD.hull_macd(raw_data['close'], MACD_S, MACD_L, MACD_M)  # hull_macd
+        macd = MA.calMACD(raw_data['close'], MACD_S, MACD_L, MACD_M)   # 普通MACD
+        #macd = MACD.hull_macd(raw_data['close'], MACD_S, MACD_L, MACD_M)  # hull_macd
         raw_data['DIF'] = macd[0]
         raw_data['DEA'] = macd[1]
         raw_data['MA'] = MA.calEMA(raw_data['close'], MA_N)
