@@ -4,13 +4,6 @@
 """
 import numpy
 
-# 参数设置
-strategy_name = 'HullRsiWin'
-exchange_id = 'SHFE'
-sec_id = 'RB'
-K_MIN = 3600
-startdate = '2010-01-01'
-enddate = '2018-09-01'
 multi_symbol_bt_swtich = False  # 多品种多周期优化开关，打开后代码会从下面标识的文件中导入参数
 result_para_dic = {  # 结果计算相关参数
     'positionRatio': 0.2,  # 持仓比例
@@ -18,11 +11,26 @@ result_para_dic = {  # 结果计算相关参数
     'remove_polar_switch': False,
     'remove_polar_rate': 0.01
 }
+# ============================ 单品种模式参数 =======================================================
+# 参数设置
+strategy_name = 'MacdMaWin'
+exchange_id = 'SHFE'
+sec_id = 'AL'
+K_MIN = 3600
+startdate = '2010-01-01'
+enddate = '2018-09-01'
 
 strategy_para_dic = {
     # 该参数表用于各品种模式下的测试，当new为True时使用该参数表生成参数文件，为False时读取策略品种文件夹中已有的参数文件
     'MacdMaWin': {
-        'new_para': True,
+        'new_para': False,
+        'MS': [5, 10],
+        'MM': [10, 20],
+        "ML": [20, 30],
+        "MA": [30, 40]
+    },
+    'HullMacdMaWin': {
+        'new_para': False,
         'MS': [5, 10],
         'MM': [10, 20],
         "ML": [20, 30],
