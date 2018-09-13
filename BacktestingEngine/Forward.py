@@ -51,7 +51,7 @@ def get_forward(strategyName, symbolinfo, K_MIN, parasetlist, rawdatapath, start
 
     # rawdata = DC.getBarData(symbol, K_MIN, monthlist[12] + '-01 00:00:00', enddate + ' 23:59:59').reset_index(drop=True)
     cols = ['open', 'high', 'low', 'close', 'strtime', 'utc_time', 'utc_endtime']
-    barxmdic = DI.getBarDic(symbolinfo, K_MIN, cols)
+    barxmdic = DI.getBarDicAfterDomain(symbolinfo, K_MIN, cols)
 
     mtf.calOprResult(strategyName, rawdatapath, symbolinfo, K_MIN, nextmonth, colslist, barxmdic, positionRatio, initialCash, indexcols, indexcolsFlag, resultfilesuffix)
     endtime = datetime.now()
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     if not Parameter.multi_symbol_bt_swtich:
         # 单品种单周期模式
         paradic = {
-            'strategyName': strategy_name,
+            'strategy_name': strategy_name,
             'exchange_id': Parameter.exchange_id,
             'sec_id': Parameter.sec_id,
             'K_MIN': Parameter.K_MIN,
@@ -129,7 +129,7 @@ if __name__ == '__main__':
             exchangeid = symbolset.ix[i, 'exchange_id']
             secid = symbolset.ix[i, 'sec_id']
             symbol_para_dic = {
-                'strategyName': symbolset.ix[i, 'strategyName'],
+                'strategy_name': symbolset.ix[i, 'strategy_name'],
                 'exchange_id': exchangeid,
                 'sec_id': secid,
                 'K_MIN': symbolset.ix[i, 'K_MIN'],
@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
     for strategyParameter in strategyParameterSet:
 
-        strategyName = strategyParameter['strategyName']
+        strategy_name = strategyParameter['strategy_name']
         exchange_id = strategyParameter['exchange_id']
         sec_id = strategyParameter['sec_id']
         bar_type = strategyParameter['K_MIN']
@@ -186,7 +186,7 @@ if __name__ == '__main__':
                                 })
 
         if 'multi_sl' in forward_mode_dic.keys():
-            get_mix_forward(strategyName, sltlist, symbol_info, bar_type, parasetlist, symbol_bar_folder_name, startdate, enddate, result_para_dic)
+            get_mix_forward(strategy_name, sltlist, symbol_info, bar_type, parasetlist, symbol_bar_folder_name, startdate, enddate, result_para_dic)
         else:
             # 单止损模式
             if 'common' in forward_mode_dic.keys():
@@ -194,15 +194,15 @@ if __name__ == '__main__':
                 resultfilesuffix = 'result.csv'
                 indexcolsFlag = False
                 bt_folder = symbol_bar_folder_name + "%s %d backtesting\\" % (symbol, bar_type)
-                get_forward(strategyName, symbol_info, bar_type, parasetlist, bt_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
+                get_forward(strategy_name, symbol_info, bar_type, parasetlist, bt_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
                             resultfilesuffix)
             for slt in sltlist:
-                colslist = mtf.getColumnsName(False)
+                colslist = mtf.getColumnsName(True)
                 resultfilesuffix = slt['fileSuffix']
                 folder_prefix = slt['folderPrefix']
-                indexcolsFlag = False
+                indexcolsFlag = True
                 for stop_loss_para_dic in slt['paralist']:
                     para_name = stop_loss_para_dic['para_name']
                     raw_folder = symbol_bar_folder_name + "%s%s\\" % (folder_prefix, para_name)
-                    get_forward(strategyName, symbol_info, bar_type, parasetlist, raw_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
+                    get_forward(strategy_name, symbol_info, bar_type, parasetlist, raw_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
                                 resultfilesuffix + para_name + '.csv')

@@ -79,7 +79,7 @@ def single_sl(strategy_name, symbol_info, bar_type, setname, bar1m_dic, barxm_di
         startutc = opr['openutc']
         endutc = opr['closeutc']
         data_1m = bar1m.loc[startutc:endutc]
-        data1m= data_1m.drop(data_1m.index[-1])     # 因为loc取数是含头含尾的，所以要去掉最后一行
+        data1m = data_1m.drop(data_1m.index[-1])     # 因为loc取数是含头含尾的，所以要去掉最后一行
         for stop_loss_class in stop_loss_class_list:
             sl_name = stop_loss_class.get_sl_name()
             stop_loss_opr_result_dic = all_stop_loss_opr_result_dic[sl_name]

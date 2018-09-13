@@ -360,10 +360,9 @@ def runPara(strategyName, whiteWindows, symbolinfo, K_MIN, parasetlist, monthlis
                       datapath=resultpath, resultpath=rankpath)
 
 
-# def getForward(strategyName,symbolinfo,K_MIN,parasetlist,rawdatapath,startdate,enddate,nextmonth,windowsSet,colslist,positionRatio,initialCash,resultfilesuffix):
 def getMonthParameter(strategyName, startmonth, endmonth, symbolinfo, K_MIN, parasetlist, oprresultpath, columns,
                       resultfilesuffix):
-    '''
+    """
     根据输出参数计算目标月份应该使用的参数集
     :param month: 目标月份
     :param ranktarget: 评价纬度
@@ -371,7 +370,7 @@ def getMonthParameter(strategyName, startmonth, endmonth, symbolinfo, K_MIN, par
     :param oprresultpath:
     :param targetpath:
     :return:
-    '''
+    """
     print ('Calculating month parameters,start from %s to %s' % (startmonth, endmonth))
     symbol = symbolinfo.domain_symbol
     parasetlen = len(parasetlist)
@@ -384,13 +383,13 @@ def getMonthParameter(strategyName, startmonth, endmonth, symbolinfo, K_MIN, par
     success_rate_list = []
     drawback_list = []
     set_list = []
-    for i in np.arange(0, parasetlen):
+    for i in range(parasetlen):
         setname = parasetlist[i]
         print setname
-        filename = oprresultpath + strategyName + ' ' + symbol + str(K_MIN) + ' ' + setname + resultfilesuffix
+        filename = oprresultpath + strategyName + ' ' + symbol + str(K_MIN) + ' ' + setname + ' ' +resultfilesuffix
         resultdf = pd.read_csv(filename)
         dailydf = pd.read_csv(
-            oprresultpath + strategyName + ' ' + symbol + str(K_MIN) + ' ' + setname + ' daily' + resultfilesuffix[1:])
+            oprresultpath + strategyName + ' ' + symbol + str(K_MIN) + ' ' + setname + ' daily' + resultfilesuffix)
         starttime = startmonth + '-01 00:00:00'
         endtime = endmonth + '-01 00:00:00'
         startutc = float(time.mktime(time.strptime(starttime, "%Y-%m-%d %H:%M:%S")))
