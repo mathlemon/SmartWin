@@ -13,7 +13,7 @@ result_para_dic = {  # 结果计算相关参数
 }
 # ============================ 单品种模式参数 =======================================================
 # 参数设置
-strategy_name = 'HullRsiWin'
+strategy_name = 'HullRsiTunnelWin'
 exchange_id = 'SHFE'
 sec_id = 'RB'
 K_MIN = 3600
@@ -44,12 +44,26 @@ strategy_para_dic = {
         "N": [6, 10],
         "MaN": [20, 30]
     },
+    'HullRsiTunnelWin': {
+        'new_para': True,
+        "N1": [15, 20],
+        "M1": [6, 10],
+        "M2": [3],
+        "N": [6, 10],
+        "TN": [20, 30]
+    },
     'LvyiWin': {
         'new_para': True,
         "MS": [5, 8],
         "ML": [10, 15],
         "KDJ_N": [20],
         "DMI_N": [26, 30]
+    },
+    'Lvyi3MaWin': {
+        'new_para': True,
+        "MS": [5, 8],
+        "MM": [10, 15],
+        "ML": [30, 40]
     }
 }
 # ====================止损控制开关=====================
