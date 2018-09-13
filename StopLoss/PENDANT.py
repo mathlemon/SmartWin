@@ -117,7 +117,7 @@ class PendantStopLoss(StopLossTemplate):
             for n in self.pendant_n_list:
                 cols_name = 'atr_%d' % n
                 if cols_name not in barxm_cloumns:  # 如果打开了yoyo且n值相同，则不重复计算
-                    barxm[cols_name] = ATR.ATR(barxm.high, barxm.low, barxm.close, n)
+                    _tr, barxm[cols_name] = ATR.ATR(barxm.high, barxm.low, barxm.close, n)
         return bar1m_dic, barxm_dic
 
     def data_process_after_domain(self, domain_bar_1m, domain_bar_xm):
