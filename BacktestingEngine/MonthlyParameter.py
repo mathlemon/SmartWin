@@ -11,7 +11,7 @@ from datetime import datetime
 
 def getmultiStlMonthParameter(strategyName, sltlist, symbolinfo, K_MIN, parasetlist, startmonth, endmonth):
     colslist = mtf.getColumnsName(True)
-    resultfilesuffix = ' result_multiSLT.csv'
+    resultfilesuffix = 'result_multiSLT.csv'
     # 先生成参数列表
     allSltSetList = []  # 这是一个二维的参数列表，每一个元素是一个止损目标的参数dic列表
     for slt in sltlist:
@@ -35,6 +35,7 @@ def getmultiStlMonthParameter(strategyName, sltlist, symbolinfo, K_MIN, parasetl
         newfolder = ''
         for sltp in sltset:
             newfolder += (sltp['name'] + '_%s' % (sltp['sltValue']['para_name']))
+        print newfolder
         rawdatapath = newfolder + '\\'
         df = mtf.getMonthParameter(strategyName, startmonth, endmonth, symbolinfo, K_MIN, parasetlist, rawdatapath, colslist, resultfilesuffix)
         filenamehead = ("%s%s_%s_%d_%s_parameter_%s" % (rawdatapath, strategyName, symbolinfo.domain_symbol, K_MIN, endmonth, newfolder))
@@ -71,7 +72,7 @@ if __name__ == '__main__':
     calcMultiSLT = False
     for sl_name, stop_loss in Parameter.forward_mode_para_dic.items():
         if sl_name == 'multi_sl':
-            calMultiSLT = stop_loss['multi_sl']
+            calcMultiSLT = stop_loss['multi_sl']
         elif sl_name != 'common':  # 混合标志和普通模式标志都是不带参数的
             if stop_loss[sl_name]:
                 stop_loss['price_tick'] = price_tick
@@ -95,6 +96,7 @@ if __name__ == '__main__':
             df.to_csv(filenamehead + '.csv')
         for slt in sltlist:
             colslist = mtf.getColumnsName(False)
+            sl_name = slt['name']
             resultfilesuffix = slt['fileSuffix']
             folder_prefix = slt['folderPrefix']
             indexcolsFlag = False
@@ -102,5 +104,5 @@ if __name__ == '__main__':
                 para_name = stop_loss_para_dic['para_name']
                 raw_folder = symbol_bar_folder_name + "%s%s\\" % (folder_prefix, para_name)
                 df = mtf.getMonthParameter(strategy_name, startmonth, newmonth, symbolinfo, bar_type, parasetlist, raw_folder, colslist, resultfilesuffix + para_name + '.csv')
-                filenamehead = ("%s%s_%s_%d_%s_parameter_dsl_%s" % (raw_folder, strategy_name, symbolinfo.domain_symbol, bar_type, newmonth, para_name))
+                filenamehead = ("%s%s_%s_%d_%s_parameter_%s%s" % (raw_folder, strategy_name, symbolinfo.domain_symbol, bar_type, newmonth, sl_name, para_name))
                 df.to_csv(filenamehead + '.csv')
