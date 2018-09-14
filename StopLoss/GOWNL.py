@@ -36,7 +36,7 @@ class GownlStopLoss(StopLossTemplate):
                         {
                             'para_name': '%.3f_%.1f_%d' % (gownl_protect, gownl_floor, gownl_step),
                             'gownl_protect': gownl_protect,
-                            'gownl_floor': gownl_floor,
+                            'gownl_floor': gownl_floor * self.price_tick,
                             'gownl_step': gownl_step * self.price_tick
                         }
                     )
