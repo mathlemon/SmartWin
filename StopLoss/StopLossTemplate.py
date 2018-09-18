@@ -5,6 +5,7 @@ SmartWin回策框架
 作者:Smart
 新建时间：2018-09-03
 """
+import pandas as pd
 
 
 class StopLossTemplate(object):
@@ -31,7 +32,7 @@ class StopLossTemplate(object):
     def data_process_after_domain(self, domin_bar_1m, domain_bar_xm):
         pass
 
-    def get_para_dic_list(self,):
+    def get_para_dic_list(self, ):
         return self.para_dic_list
 
     def get_para_name_list(self):
@@ -45,3 +46,15 @@ class StopLossTemplate(object):
 
     def get_sl_name(self):
         return self.sl_name
+
+    def final_result_pivot(self, final_result_df):
+        para_name = len(self.sl_para_name_list)
+        pivot_cols = ['para_name']
+        if para_name > 1:
+            pivot_cols = self.sl_para_name_list
+            a = final_result_df['para_name'].str.split('_', expand=True)
+            for i in range(para_name):
+                final_result_df[self.sl_para_name_list[i]] = a[i]
+        pv_df = pd.pivot_table(final_result_df, index=pivot_cols, values=['worknum', 'OprTimes', 'EndCash', 'Annual', 'Sharpe', 'SR', 'DrawBack',
+                                                                          'new_EndCash', 'new_Annual', 'new_Sharpe', 'new_SR', 'new_DrawBack'])
+        return pv_df
