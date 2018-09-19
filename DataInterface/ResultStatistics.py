@@ -774,7 +774,7 @@ class MultiSymbolSuperposition:
             sorted_opr_list.append(df)
             max_opr_utc = max(max_opr_utc, df.ix[0, 'oprutc'])
         sorted_opr_df = pd.concat(sorted_opr_list)
-        sorted_opr_df.sort_values('oprutc', inplace=True)
+        sorted_opr_df.sort_values(by=['oprutc', 'oprtype'], inplace=True)
         sorted_opr_df = sorted_opr_df.loc[sorted_opr_df['oprutc'] >= max_opr_utc]
         sorted_opr_df.reset_index(drop=True, inplace=True)
         return sorted_opr_df
