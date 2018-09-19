@@ -55,6 +55,6 @@ class StopLossTemplate(object):
             a = final_result_df['para_name'].str.split('_', expand=True)
             for i in range(para_name):
                 final_result_df[self.sl_para_name_list[i]] = a[i]
-        pv_df = pd.pivot_table(final_result_df, index=pivot_cols, values=['worknum', 'OprTimes', 'EndCash', 'Annual', 'Sharpe', 'SR', 'DrawBack',
-                                                                          'new_EndCash', 'new_Annual', 'new_Sharpe', 'new_SR', 'new_DrawBack'])
+        pv_df = pd.pivot_table(final_result_df, index=pivot_cols, values=['worknum', 'OprTimes', 'EndCash', 'new_EndCash', 'Annual', 'new_Annual', 'Sharpe', 'new_Sharpe',
+                                                                          'SR', 'new_SR', 'DrawBack', 'new_DrawBack'])
         return pv_df

@@ -218,7 +218,7 @@ def calc_multi_result_superposition(result_folder=Parameter.root_path + 'ResultS
     """
     mss = RS.MultiSymbolSuperposition(result_folder)
     multi_result = mss.get_superposition_result()
-    multi_result.to_csv(result_folder + 'multi_result_superposition.csv')
+    multi_result.to_csv(result_folder + 'multi_result_superposition.csv', index=False)
     print u"多结果叠加计算完成"
     print u"开始时间:", mss.opr_df_reformed.ix[0, 'oprtime']
     print u"最终资金:%.3f" % mss.opr_df_reformed.iloc[-1]['own cash']
