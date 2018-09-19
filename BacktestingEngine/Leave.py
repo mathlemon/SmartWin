@@ -187,7 +187,7 @@ def single_sl_engine(strategy_name, symbol_info, bar_type, para_set_list, stop_l
         all_final_result = pd.concat(all_result_list)
         all_final_result_pivot = stop_loss_class.final_result_pivot(all_final_result)
         all_final_result.to_csv(strategy_name + ' ' + symbol + str(bar_type) + ' finalresult_%s.csv' % sl_name, index=False)
-        all_final_result_pivot.to_csv(strategy_name + ' ' + symbol + str(bar_type) + ' finalresult_%s_pivot.csv' % sl_name, index=False)
+        all_final_result_pivot.to_csv(strategy_name + ' ' + symbol + str(bar_type) + ' finalresult_%s_pivot.csv' % sl_name)
     time_finish_saving_file = time.time()
     print ("time_finish_saving_file:%.4f" % (time_finish_saving_file - time_fininsh_calc))
     timeend = time.time()
