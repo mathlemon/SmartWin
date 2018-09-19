@@ -19,6 +19,8 @@ import pandas as pd
 from pandas import Series
 from datetime import date, timedelta
 import numpy as np
+import os
+import DataInterface as DI
 
 
 def annual_return(resultdf, cash_col='own cash', closeutc_col='closeutc', openutc_col='openutc'):
@@ -55,10 +57,10 @@ def max_drawback(resultdf, cash_col='own cash', opentime_col='opentime'):
     max_dd = temp['dd2here']
     end_date = temp['date']
 
-    df = df[df['date'] <= end_date]
-    start_date = df.sort_values(by='capital', ascending=False).iloc[0]['date']
+    df2 = df[df['date'] <= end_date]
+    start_date = df2.sort_values(by='capital', ascending=False).iloc[0]['date']
     # print('最大回撤为：%f,开始时间：%s,结果时间:%s'% (max_dd,start_date,end_date))
-    return max_dd, start_date, end_date
+    return max_dd, df['dd2here'], start_date, end_date
 
 
 def average_change(resultdf, retr_col='ret_r'):
@@ -700,6 +702,144 @@ def opr_result_remove_polar(oprdf, remove_rate=0.01):
         oprdf.loc[r, 'tradetype'] = 0
     oprdf.sort_index(inplace=True)
     return oprdf
+
+
+class MultiSymbolSuperposition:
+
+    def __init__(self, data_folder):
+        self.data_folder = data_folder
+        self.strategy_symbol_bar_dic = {}
+        self.is_calculated = False
+        self.min_opr_utc = 0
+        self.setup()
+        self.opr_df_reformed = self.reform_opr_df()
+        pass
+
+    def setup(self):
+        # 从传入的文件夹读入文件，从文件名中解析出策略、品种、周期信息
+        file_list = os.listdir(self.data_folder)
+        for file_name in file_list:
+            if file_name[-3:] == 'csv' and 'Rank' in file_name:  # 只读csv文件,并且包含关键字Rank,表示是推进结果文件
+                strategy_symobl_bar_name, pos_str, file_suffix = file_name.split('_', 2)
+                strategy_name, symbol_bar_name = strategy_symobl_bar_name.split(' ')
+                symbol = ''
+                bar_type = ''
+                if pos_str.isdigit():
+                    pos = float(pos_str)/100
+                else:
+                    pos = 0.2
+                for i in range(len(symbol_bar_name)):
+                    if symbol_bar_name[i].isdigit():
+                        symbol = symbol_bar_name[:i]
+                        bar_type = symbol_bar_name[i:]
+                        break
+                self.strategy_symbol_bar_dic[strategy_symobl_bar_name] = {
+                    'strategy_name': strategy_name,
+                    'symbol': symbol,
+                    'bar_type': bar_type,
+                    'pos': pos,
+                    'opr_df': pd.read_csv(self.data_folder + file_name)
+                }
+
+    def reform_opr_df(self):
+        # 将读入的文件买卖交易并列，全部组织汇总后排序，形成新的操作文件
+        new_openheader = ['opentime', 'openutc', 'openindex', 'openprice', 'tradetype', 'new_hands']
+        new_closeheaders = ['new_closetime', 'new_closeutc', 'new_closeindex', 'new_closeprice', 'tradetype', 'new_hands']
+        sorted_opr_list = []
+        max_opr_utc = 0
+        for symbol_name, symbol_dic in self.strategy_symbol_bar_dic.items():
+            symbol_opr_df = symbol_dic['opr_df']
+            opendf = symbol_opr_df.loc[:, new_openheader]
+            opendf.rename(columns={'opentime': 'oprtime',
+                                   'openutc': 'oprutc',
+                                   'openindex': 'oprindex',
+                                   'openprice': 'oprprice',
+                                   }, inplace=True)
+            opendf['oprtype'] = 1  # 1表示开仓
+
+            closedf = symbol_opr_df.loc[:, new_closeheaders]
+            closedf.rename(columns={'new_closetime': 'oprtime',
+                                    'new_closeutc': 'oprutc',
+                                    'new_closeindex': 'oprindex',
+                                    'new_closeprice': 'oprprice',
+                                    }, inplace=True)
+            closedf['oprtype'] = -1  # -1表示平仓
+            df = pd.concat([opendf, closedf])
+            df['tradeDate'] = df['oprtime'].str.slice(0, 10)
+            # df['oprtype'] = df['tradetype'] * df['oprtype']
+            df['symbol_name'] = symbol_name
+            df.set_index('oprutc', inplace=True)
+            df.sort_index(inplace=True)
+            df.reset_index(drop=False, inplace=True)
+            sorted_opr_list.append(df)
+            max_opr_utc = max(max_opr_utc, df.ix[0, 'oprutc'])
+        sorted_opr_df = pd.concat(sorted_opr_list)
+        sorted_opr_df.sort_values('oprutc', inplace=True)
+        sorted_opr_df = sorted_opr_df.loc[sorted_opr_df['oprutc'] >= max_opr_utc]
+        sorted_opr_df.reset_index(drop=True, inplace=True)
+        return sorted_opr_df
+
+    def get_superposition_result(self):
+        if not self.is_calculated:
+            self.opr_df_reformed['slip'] = 0
+            self.opr_df_reformed['poundageType'] = ''
+            self.opr_df_reformed['poundageFee'] = 0
+            self.opr_df_reformed['poundageRate'] = 0
+            self.opr_df_reformed['multiplier'] = 0
+            self.opr_df_reformed['marginRatio'] = 0
+            self.opr_df_reformed['commission_fee'] = 0  # 手续费
+            self.opr_df_reformed['per earn'] = 0  # 单笔盈亏
+            self.opr_df_reformed['own cash'] = 0  # 自有资金线
+            self.opr_df_reformed['hands'] = 0  # 每次手数
+
+            aviable_cash = 1000000
+            holding_dic = {}
+            for symbol_name, symbol_dic in self.strategy_symbol_bar_dic.items():
+                holding_dic[symbol_name] = {
+                    'holding_hands': 0,
+                    'holding_price': 0
+                }
+                symbol_info = DI.SymbolInfo(symbol_dic['symbol'])
+                self.opr_df_reformed.loc[self.opr_df_reformed['symbol_name'] == symbol_name, ['poundageType', 'poundageFee', 'poundageRate']] = symbol_info.getPoundage()
+                self.opr_df_reformed.loc[self.opr_df_reformed['symbol_name'] == symbol_name, 'slip'] = symbol_info.getSlip()
+                self.opr_df_reformed.loc[self.opr_df_reformed['symbol_name'] == symbol_name, 'multiplier'] = symbol_info.getMultiplier()
+                self.opr_df_reformed.loc[self.opr_df_reformed['symbol_name'] == symbol_name, 'marginRatio'] = symbol_info.getMarginRatio()
+                self.opr_df_reformed.loc[self.opr_df_reformed['symbol_name'] == symbol_name, 'positionRatio'] = symbol_dic['pos']
+
+            opr_num = self.opr_df_reformed.shape[0]
+            for i in range(opr_num):
+                rows = self.opr_df_reformed.iloc[i]
+                opr_type = rows['oprtype']  # 开平仓
+                trade_type = rows['tradetype']  # 多空
+                symbol_name = rows['symbol_name']
+                cashPerHand = rows['oprprice'] * rows['multiplier']
+                if opr_type == 1:
+                    # 开仓, 计算可买手数
+                    symbol_aviable_cash = aviable_cash * rows['positionRatio']
+                    hands = symbol_aviable_cash // (cashPerHand * rows['marginRatio'])
+                    holding_dic[symbol_name]['holding_price'] = rows['oprprice']
+                    holding_dic[symbol_name]['holding_hands'] = hands
+                    self.opr_df_reformed.ix[i, 'hands'] = hands
+                else:
+                    # 平仓， 计算手续费和收益
+                    hands = holding_dic[symbol_name]['holding_hands']
+                    open_price = holding_dic[symbol_name]['holding_price']
+                    ret = (rows['oprprice'] - open_price) * trade_type - rows['slip']
+                    # ret_r = ret / open_price
+                    if rows['poundageType'] == u'rate':
+                        commission_fee = cashPerHand * hands * rows['poundageRate'] * 2
+                    else:
+                        commission_fee = hands * rows['poundageFee'] * 2
+                    per_earn = ret * hands * rows['multiplier']
+                    aviable_cash = aviable_cash + per_earn - commission_fee
+                    self.opr_df_reformed.ix[i, 'commission_fee'] = commission_fee
+                    self.opr_df_reformed.ix[i, 'per earn'] = per_earn
+                    self.opr_df_reformed.ix[i, 'hands'] = hands
+                self.opr_df_reformed.ix[i, 'own cash'] = aviable_cash
+            expand_max = self.opr_df_reformed['own cash'].expanding().max()
+            self.opr_df_reformed['draw_back'] = (expand_max - self.opr_df_reformed['own cash'])/expand_max
+            self.is_calculated = True
+        return self.opr_df_reformed
 
 
 if __name__ == '__main__':

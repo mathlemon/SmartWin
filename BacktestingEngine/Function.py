@@ -210,6 +210,25 @@ def plot_parameter_result_pic():
         fig.savefig('%s %s %s %d_para_distribute.png' % (Parameter.strategy_name, exchange_id, sec_id, bar_type), dip=500)
 
 
+def calc_multi_result_superposition(result_folder=Parameter.root_path + 'ResultSuperposition\\'):
+    """
+    计算多个交易结果叠加的结果
+    :param result_folder: 结果存放文件，默认为Parameter设置的根目录下的ResultSuperposition文件夹
+    :return:
+    """
+    mss = RS.MultiSymbolSuperposition(result_folder)
+    multi_result = mss.get_superposition_result()
+    multi_result.to_csv(result_folder + 'multi_result_superposition.csv')
+    print u"多结果叠加计算完成"
+    print u"开始时间:", mss.opr_df_reformed.ix[0, 'oprtime']
+    print u"最终资金:%.3f" % mss.opr_df_reformed.iloc[-1]['own cash']
+    print u"最大回撤:%.3f" % mss.opr_df_reformed['draw_back'].max()
+    print u"品种列表及盈利情况:"
+    for k in mss.strategy_symbol_bar_dic.keys():
+        k_pnl = mss.opr_df_reformed.loc[mss.opr_df_reformed['symbol_name'] == k, 'per earn'].sum()
+        print "%s 盈利:%.3f,仓位:%.2f" % (k, k_pnl, mss.strategy_symbol_bar_dic[k]['pos'])
+
+
 if __name__ == "__main__":
     """
     计算单个品种回测结果的汇总finalresult文件，包括普通回测和止损结果
@@ -240,3 +259,11 @@ if __name__ == "__main__":
 
     """绘制finalresult结果中参数对应的end cash分布柱状图,自动从_backtesting_parameter_plot.xlsx读品种列表"""
     # plot_parameter_result_pic()
+
+    """
+    计算多个交易结果叠加的结果，各不同文件的仓位在文件名上设置
+    只支持推进结果
+    :param result_folder: 结果存放文件，默认为Parameter设置的根目录下的ResultSuperposition文件夹， 如果要改变文件只需要将新路径填入函数的函数
+    如： calc_multi_result_superposition("新文件夹路径")
+    """
+    calc_multi_result_superposition()
