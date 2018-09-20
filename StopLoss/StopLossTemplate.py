@@ -6,7 +6,7 @@ SmartWin回策框架
 新建时间：2018-09-03
 """
 import pandas as pd
-
+import numpy as np
 
 class StopLossTemplate(object):
     """
@@ -55,6 +55,10 @@ class StopLossTemplate(object):
             a = final_result_df['para_name'].str.split('_', expand=True)
             for i in range(para_name):
                 final_result_df[self.sl_para_name_list[i]] = a[i]
-        pv_df = pd.pivot_table(final_result_df, index=pivot_cols, values=['worknum', 'OprTimes', 'EndCash', 'new_EndCash', 'Annual', 'new_Annual', 'Sharpe', 'new_Sharpe',
-                                                                          'SR', 'new_SR', 'DrawBack', 'new_DrawBack'])
+        final_result_df['worknum'] = pd.to_numeric(final_result_df['worknum'])
+        final_result_df['OprTimes'] = pd.to_numeric(final_result_df['OprTimes'])
+        pv_df = pd.pivot_table(final_result_df, index=pivot_cols, values=['worknum', 'OprTimes', 'Annual', 'new_Annual', 'Sharpe', 'new_Sharpe', 'SR', 'new_SR',
+                                                                          'DrawBack', 'new_DrawBack'])
+        pv_df = pv_df.ix[:, ['worknum', 'OprTimes', 'Annual', 'new_Annual', 'Sharpe', 'new_Sharpe', 'SR', 'new_SR',
+                                                                          'DrawBack', 'new_DrawBack']]
         return pv_df
