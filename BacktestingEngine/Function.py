@@ -19,7 +19,7 @@ def calc_single_final_result(domain_symbol, bar_type, folder_name):
     :param bar_type: 周期
     :return:
     """
-    strategy_folder = Parameter.strategy_folder
+    strategy_folder = "%s%s\\" % (Parameter.root_path, Parameter.strategy_name)
     exchange_id, sec_id = domain_symbol.split('.')
     symbol_folder = "%s %s %s %d\\" % (Parameter.strategy_name, exchange_id, sec_id, bar_type)
     os.chdir(strategy_folder + symbol_folder)
@@ -72,7 +72,7 @@ def re_concat_close_all_final_result(domain_symbol, bar_type, sl_type):
     :param sl_type: 止损类型 'dsl', 'ownl', 'frsl', 'gownl', 'pendant', 'yoyo'
     :return:
     """
-    strategy_folder = Parameter.strategy_folder
+    strategy_folder = "%s%s\\" % (Parameter.root_path, Parameter.strategy_name)
     exchange_id, sec_id = domain_symbol.split('.')
     symbol_folder = "%s %s %s %d" % (Parameter.strategy_name, exchange_id, sec_id, bar_type)
     os.chdir(strategy_folder + symbol_folder)
@@ -101,7 +101,7 @@ def re_concat_multi_symbol_final_result():
     重新汇总多品种回测的final_result结果，自动从_multi_symbol_setting_bt.xlsx文件读取品种列表
     :return:
     """
-    strategy_folder = Parameter.strategy_folder
+    strategy_folder = "%s%s\\" % (Parameter.root_path, Parameter.strategy_name)
     os.chdir(strategy_folder)
     multi_symbol_df = pd.read_excel(Parameter.symbol_KMIN_set_filename)
     all_final_result_list = []
@@ -185,7 +185,7 @@ def calResultByPeriod():
 
 def plot_parameter_result_pic():
     """绘制finalresult结果中参数对应的end cash和max own cash的分布柱状图"""
-    strategy_folder = Parameter.strategy_folder
+    strategy_folder = "%s%s\\" % (Parameter.root_path, Parameter.strategy_name)
     os.chdir(strategy_folder)
     setting_file = pd.read_excel(Parameter.bt_parameter_optimize_polt_filename)
     for n, rows in setting_file.iterrows():

@@ -138,13 +138,12 @@ def getParallelResult(strategyParameter, strategy_class, parasetlist, paranum, i
 if __name__ == '__main__':
     # ====================参数和文件夹设置======================================
     indexcols = Parameter.ResultIndexDic
-
-    # 策略参数设置
-    strategy_name = Parameter.strategy_name
-    strategy = Strategy.strategy_mapping_dic[strategy_name]()
-    strategy_para_name_list = strategy.get_para_name_list()
-    strategyParameterSet = []
+    strategyParameterSet = {}
     if not Parameter.multi_symbol_bt_swtich:
+        strategy_bt_parameter = []
+        # 策略参数设置
+        strategy_name = Parameter.strategy_name
+        strategy_para_name_list = Parameter.get_strategy_para_name_list(strategy_name)
         # 单品种单周期模式
         default_para_dic = Parameter.strategy_para_dic[strategy_name]
         paradic = {
@@ -161,67 +160,81 @@ if __name__ == '__main__':
             # 参数新增模式下，加载默认参数
             for para_name in strategy_para_name_list:
                 paradic[para_name] = default_para_dic[para_name]
-        strategyParameterSet.append(paradic)
+        strategy_bt_parameter.append(paradic)
+        strategyParameterSet[strategy_name] = strategy_bt_parameter
     else:
-        # 多品种多周期模式
-        symbol_set = pd.read_excel(Parameter.strategy_folder + Parameter.symbol_KMIN_set_filename)
-        for n, rows in symbol_set.iterrows():
-            new_para = rows['new_para']
-            exchangeid = rows['exchange_id']
-            secid = rows['sec_id']
-            para_dic = {
-                'strategy_name': strategy_name,
-                'exchange_id': exchangeid,
-                'sec_id': secid,
-                'K_MIN': int(rows['K_MIN']),
-                'startdate': rows['startdate'],
-                'enddate': rows['enddate'],
-                'result_para_dic': Parameter.result_para_dic,
-                'new_para': new_para
-            }
-            if new_para:
-                # 参数新增模式下，加载参数
+        multi_symbol_control_df = pd.read_excel(Parameter.root_path + Parameter.symbol_KMIN_set_filename, sheet_name=None)
+        multi_strategy_control = multi_symbol_control_df['Control']
+        for n, s in multi_strategy_control.iterrows():
+            strategy_name = s['strategy']
+            strategy_switch = s['switch']
+            if strategy_switch:
+                strategy_bt_parameter = []
+                symbol_set = multi_symbol_control_df[strategy_name]
+                # 多品种多周期模式
+                for i, rows in symbol_set.iterrows():
+                    if rows['switch']:
+                        new_para = rows['new_para']
+                        exchangeid = rows['exchange_id']
+                        secid = rows['sec_id']
+                        para_dic = {
+                            'strategy_name': strategy_name,
+                            'exchange_id': exchangeid,
+                            'sec_id': secid,
+                            'K_MIN': int(rows['K_MIN']),
+                            'startdate': rows['startdate'],
+                            'enddate': rows['enddate'],
+                            'result_para_dic': Parameter.result_para_dic,
+                            'new_para': new_para
+                        }
+                        if new_para:
+                            # 参数新增模式下，加载参数
+                            for para_name in Parameter.get_strategy_para_name_list(strategy_name):
+                                para_dic[para_name] = Parameter.para_str_to_int(rows[para_name])
+                        strategy_bt_parameter.append(para_dic)
+                strategyParameterSet[strategy_name] = strategy_bt_parameter
+
+    for strategy_name, strategy_bt_parameter in strategyParameterSet.items():
+        allsymbolresult_cols = ['Setname'] + indexcols + ['strategy_name', 'exchange_id', 'sec_id', 'K_MIN']
+        allsymbolresult = pd.DataFrame(columns=allsymbolresult_cols)
+        strategy = Strategy.strategy_mapping_dic[strategy_name]()
+        strategy_para_name_list = strategy.get_para_name_list()
+        strategy_folder = "%s%s\\" % (Parameter.root_path, strategy_name)     # 每个策略对应一个文件夹
+        for strategyParameter in strategy_bt_parameter:
+            exchange_id = strategyParameter['exchange_id']
+            sec_id = strategyParameter['sec_id']
+            bar_type = strategyParameter['K_MIN']
+            symbol_bar_folder_name = strategy_folder + "%s %s %s %d" % (strategy_name, exchange_id, sec_id, bar_type)
+            try:
+                os.makedirs(symbol_bar_folder_name)
+            except:
+                pass
+            finally:
+                os.chdir(symbol_bar_folder_name)    # 将操作目录设为当前品种+周期的目录
+            try:
+                os.mkdir("%s.%s %d backtesting" % (exchange_id, sec_id, bar_type))
+            except:
+                pass
+
+            paraset_name = "%s %s %s %d Parameter.csv" % (strategy_name, exchange_id, sec_id, bar_type)
+            if not strategyParameter['new_para']:
+                # 读取已有参数表
+                parasetlist = pd.read_csv(paraset_name)
+            else:
+                # 按参数新生成参数表
+                para_list_dic = {}
                 for para_name in strategy_para_name_list:
-                    para_dic[para_name] = Parameter.para_str_to_int(rows[para_name])
-            strategyParameterSet.append(para_dic)
+                    para_list_dic[para_name] = strategyParameter[para_name]
+                parasetlist = strategy.get_para_list(para_list_dic)
+                parasetlist.to_csv(paraset_name)
+            paranum = parasetlist.shape[0]
 
-    allsymbolresult_cols = ['Setname'] + indexcols + ['strategy_name', 'exchange_id', 'sec_id', 'K_MIN']
-    allsymbolresult = pd.DataFrame(columns=allsymbolresult_cols)
-    for strategyParameter in strategyParameterSet:
-        exchange_id = strategyParameter['exchange_id']
-        sec_id = strategyParameter['sec_id']
-        bar_type = strategyParameter['K_MIN']
-        symbol_bar_folder_name = Parameter.strategy_folder + "%s %s %s %d" % (strategy_name, exchange_id, sec_id, bar_type)
-        try:
-            os.makedirs(symbol_bar_folder_name)
-        except:
-            pass
-        finally:
-            os.chdir(symbol_bar_folder_name)    # 将操作目录设为当前品种+周期的目录
-        try:
-            os.mkdir("%s.%s %d backtesting" % (exchange_id, sec_id, bar_type))
-        except:
-            pass
-
-        paraset_name = "%s %s %s %d Parameter.csv" % (strategy_name, exchange_id, sec_id, bar_type)
-        if not strategyParameter['new_para']:
-            # 读取已有参数表
-            parasetlist = pd.read_csv(paraset_name)
-        else:
-            # 按参数新生成参数表
-            para_list_dic = {}
-            for para_name in strategy_para_name_list:
-                para_list_dic[para_name] = strategyParameter[para_name]
-            parasetlist = strategy.get_para_list(para_list_dic)
-            parasetlist.to_csv(paraset_name)
-        paranum = parasetlist.shape[0]
-
-        r = getParallelResult(strategyParameter, strategy, parasetlist, paranum, indexcols)
-        r['strategy_name'] = strategyParameter['strategy_name']
-        r['exchange_id'] = strategyParameter['exchange_id']
-        r['sec_id'] = strategyParameter['sec_id']
-        r['K_MIN'] = strategyParameter['K_MIN']
-        allsymbolresult = pd.concat([allsymbolresult, r])
-    allsymbolresult.reset_index(drop=False, inplace=True)
-    os.chdir(Parameter.strategy_folder)
-    allsymbolresult.to_csv(strategy_name + "_multi_symbol_final_results.csv")
+            r = getParallelResult(strategyParameter, strategy, parasetlist, paranum, indexcols)
+            r['strategy_name'] = strategyParameter['strategy_name']
+            r['exchange_id'] = strategyParameter['exchange_id']
+            r['sec_id'] = strategyParameter['sec_id']
+            r['K_MIN'] = strategyParameter['K_MIN']
+            allsymbolresult = pd.concat([allsymbolresult, r])
+        allsymbolresult.reset_index(drop=False, inplace=True)
+        os.chdir(strategy_folder)
+        allsymbolresult.to_csv(strategy_name + "_multi_symbol_final_results.csv", index=False)

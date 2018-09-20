@@ -31,7 +31,7 @@ def bar1m_prepare(bar1m):
 
 
 def single_sl(strategy_name, symbol_info, bar_type, setname, bar1m_dic, barxm_dic, stop_loss_class_list, result_para_dic, indexcols, timestart):
-    print setname
+    print "%s %s %d %s" % (strategy_name, symbol_info.domain_symbol, bar_type, setname)
     symbol = symbol_info.domain_symbol
     bt_folder = "%s %d backtesting\\" % (symbol, bar_type)
     oprdf = pd.read_csv(bt_folder + strategy_name + ' ' + symbol + str(bar_type) + ' ' + setname + ' result.csv')
@@ -285,12 +285,12 @@ def multi_sl_engine(strategyName, symbolInfo, K_MIN, parasetlist, barxmdic, sltl
 if __name__ == '__main__':
     time_start = time.time()
     # 参数设置
-    strategy_name = Parameter.strategy_name
-    strategyParameterSet = []
+    strategyParameterSet = {}
     if not Parameter.multi_symbol_bt_swtich:
+        strategy_parameter_list = []
         # 单品种单周期模式
         paradic = {
-            'strategy_name': strategy_name,
+            'strategy_name': Parameter.strategy_name,
             'exchange_id': Parameter.exchange_id,
             'sec_id': Parameter.sec_id,
             'K_MIN': Parameter.K_MIN,
@@ -303,79 +303,87 @@ if __name__ == '__main__':
             if v[k]:
                 stop_loss_dic[k] = v
         paradic['stop_loss_dic'] = stop_loss_dic
-        strategyParameterSet.append(paradic)
+        strategy_parameter_list.append(paradic)
+        strategyParameterSet[Parameter.strategy_name] = strategy_parameter_list
     else:
         # 多品种多周期模式
-        symbolset = pd.read_excel(Parameter.strategy_folder + Parameter.stoploss_set_filename, index_col='No')
-        symbolsetNum = symbolset.shape[0]
-        for i in range(symbolsetNum):
-            exchangeid = symbolset.ix[i, 'exchange_id']
-            secid = symbolset.ix[i, 'sec_id']
-            para_dic = {
-                'strategy_name': symbolset.ix[i, 'strategy_name'],
-                'exchange_id': exchangeid,
-                'sec_id': secid,
-                'K_MIN': symbolset.ix[i, 'K_MIN'],
-                'startdate': symbolset.ix[i, 'startdate'],
-                'enddate': symbolset.ix[i, 'enddate'],
-                'result_para_dic': Parameter.result_para_dic
-            }
-            stop_loss_dic = {}
-            for k, v in Parameter.stop_loss_para_dic.items():
-                enable = symbolset.ix[i, k]
-                if enable:
-                    sub_stop_loss_dic = {}
-                    for k1 in v.keys():
-                        if k1 == k:
-                            sub_stop_loss_dic[k1] = True
-                        else:
-                            sub_stop_loss_dic[k1] = Parameter.para_str_to_float(symbolset.ix[i, k1])
-                    stop_loss_dic[k] = sub_stop_loss_dic
-            para_dic['stop_loss_dic'] = stop_loss_dic
-            strategyParameterSet.append(para_dic)
+        multi_symbol_control_df = pd.read_excel(Parameter.root_path + Parameter.stoploss_set_filename, sheet_name=None)
+        multi_strategy_control = multi_symbol_control_df['Control']
+        for n, s in multi_strategy_control.iterrows():
+            strategy_name = s['strategy']
+            strategy_switch = s['switch']
+            if strategy_switch:
+                strategy_bt_parameter = []
+                symbolset = multi_symbol_control_df[strategy_name]
+                symbolsetNum = symbolset.shape[0]
+                for i in range(symbolsetNum):
+                    exchangeid = symbolset.ix[i, 'exchange_id']
+                    secid = symbolset.ix[i, 'sec_id']
+                    para_dic = {
+                        'strategy_name': symbolset.ix[i, 'strategy_name'],
+                        'exchange_id': exchangeid,
+                        'sec_id': secid,
+                        'K_MIN': symbolset.ix[i, 'K_MIN'],
+                        'startdate': symbolset.ix[i, 'startdate'],
+                        'enddate': symbolset.ix[i, 'enddate'],
+                        'result_para_dic': Parameter.result_para_dic
+                    }
+                    stop_loss_dic = {}
+                    for k, v in Parameter.stop_loss_para_dic.items():
+                        enable = symbolset.ix[i, k]
+                        if enable:
+                            sub_stop_loss_dic = {}
+                            for k1 in v.keys():
+                                if k1 == k:
+                                    sub_stop_loss_dic[k1] = True
+                                else:
+                                    sub_stop_loss_dic[k1] = Parameter.para_str_to_float(symbolset.ix[i, k1])
+                            stop_loss_dic[k] = sub_stop_loss_dic
+                    para_dic['stop_loss_dic'] = stop_loss_dic
+                    strategy_bt_parameter.append(para_dic)
+                strategyParameterSet[strategy_name] = strategy_bt_parameter
 
-    for strategyParameter in strategyParameterSet:
+    for strategy_name, strategy_bt_parameter in strategyParameterSet.items():
+        strategy_folder = "%s%s\\" % (Parameter.root_path, strategy_name)
+        for strategyParameter in strategy_bt_parameter:
+            exchange_id = strategyParameter['exchange_id']
+            sec_id = strategyParameter['sec_id']
+            bar_type = strategyParameter['K_MIN']
+            startdate = strategyParameter['startdate']
+            enddate = strategyParameter['enddate']
+            domain_symbol = '.'.join([exchange_id, sec_id])
 
-        strategy_name = strategyParameter['strategy_name']
-        exchange_id = strategyParameter['exchange_id']
-        sec_id = strategyParameter['sec_id']
-        bar_type = strategyParameter['K_MIN']
-        startdate = strategyParameter['startdate']
-        enddate = strategyParameter['enddate']
-        domain_symbol = '.'.join([exchange_id, sec_id])
+            result_para_dic = strategyParameter['result_para_dic']
+            stop_loss_dic = strategyParameter['stop_loss_dic']
 
-        result_para_dic = strategyParameter['result_para_dic']
-        stop_loss_dic = strategyParameter['stop_loss_dic']
+            symbol_info = DI.SymbolInfo(domain_symbol, startdate, enddate)
 
-        symbol_info = DI.SymbolInfo(domain_symbol, startdate, enddate)
+            symbol_bar_folder_name = strategy_folder + "%s %s %s %d" % (strategy_name, exchange_id, sec_id, bar_type)
+            os.chdir(symbol_bar_folder_name)
+            paraset_name = "%s %s %s %d Parameter.csv" % (strategy_name, exchange_id, sec_id, bar_type)
+            # 读取已有参数表
+            parasetlist = pd.read_csv(paraset_name)['Setname'].tolist()
 
-        symbol_bar_folder_name = Parameter.strategy_folder + "%s %s %s %d" % (
-            strategy_name, exchange_id, sec_id, bar_type)
-        os.chdir(symbol_bar_folder_name)
-        paraset_name = "%s %s %s %d Parameter.csv" % (strategy_name, exchange_id, sec_id, bar_type)
-        # 读取已有参数表
-        parasetlist = pd.read_csv(paraset_name)['Setname'].tolist()
+            cols = ['open', 'high', 'low', 'close', 'strtime', 'utc_time', 'utc_endtime']
+            #bar1m_dic = DI.getBarBySymbolList(domain_symbol, symbol_info.getSymbolList(), 60, startdate, enddate, cols)
+            bar1m_dic = DI.getBarDicAfterDomain(symbol_info, 60, cols)
+            barxm_dic = DI.getBarBySymbolList(domain_symbol, symbol_info.getSymbolList(), bar_type, startdate, enddate, cols)
 
-        cols = ['open', 'high', 'low', 'close', 'strtime', 'utc_time', 'utc_endtime']
-        #bar1m_dic = DI.getBarBySymbolList(domain_symbol, symbol_info.getSymbolList(), 60, startdate, enddate, cols)
-        bar1m_dic = DI.getBarDicAfterDomain(symbol_info, 60, cols)
-        barxm_dic = DI.getBarBySymbolList(domain_symbol, symbol_info.getSymbolList(), bar_type, startdate, enddate, cols)
+            if 'multi_sl' in stop_loss_dic.keys():
+                # 混合止损模式
+                sltlist = []
+                price_tick = symbol_info.getPriceTick()
+                for sl_name, stop_loss in stop_loss_dic.items():
+                    if sl_name != 'multi_sl':
+                        stop_loss['price_tick'] = price_tick  # 传入的止损参数中加入price_tick，部分止损方式定价时要用到
+                        stop_loss_class = StopLoss.strategy_mapping_dic[sl_name](stop_loss)
+                        sltlist.append({'name': sl_name,
+                                        'paralist': stop_loss_class.get_para_dic_list(),
+                                        'folderPrefix': stop_loss_class.get_folder_prefix(),
+                                        'fileSuffix':  stop_loss_class.get_file_suffix()
+                                        })
 
-        if 'multi_sl' in stop_loss_dic.keys():
-            # 混合止损模式
-            sltlist = []
-            price_tick = symbol_info.getPriceTick()
-            for sl_name, stop_loss in stop_loss_dic.items():
-                if sl_name != 'multi_sl':
-                    stop_loss['price_tick'] = price_tick  # 传入的止损参数中加入price_tick，部分止损方式定价时要用到
-                    stop_loss_class = StopLoss.strategy_mapping_dic[sl_name](stop_loss)
-                    sltlist.append({'name': sl_name,
-                                    'paralist': stop_loss_class.get_para_dic_list(),
-                                    'folderPrefix': stop_loss_class.get_folder_prefix(),
-                                    'fileSuffix':  stop_loss_class.get_file_suffix()
-                                    })
-
-            multi_sl_engine(strategy_name, symbol_info, bar_type, parasetlist, barxm_dic, sltlist, result_para_dic)
-        else:
-            # 单止损模式
-            single_sl_engine(strategy_name, symbol_info, bar_type, parasetlist, stop_loss_dic, result_para_dic, bar1m_dic, barxm_dic, time_start)
+                multi_sl_engine(strategy_name, symbol_info, bar_type, parasetlist, barxm_dic, sltlist, result_para_dic)
+            else:
+                # 单止损模式
+                single_sl_engine(strategy_name, symbol_info, bar_type, parasetlist, stop_loss_dic, result_para_dic, bar1m_dic, barxm_dic, time_start)

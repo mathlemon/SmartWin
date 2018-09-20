@@ -102,10 +102,11 @@ def get_mix_forward(strategyName, sltlist, symbolinfo, K_MIN, parasetlist, folde
 
 if __name__ == '__main__':
     # ======================================参数配置===================================================
-    strategy_name = Parameter.strategy_name
-    strategyParameterSet = []
+    strategyParameterSet = {}
     if not Parameter.multi_symbol_bt_swtich:
         # 单品种单周期模式
+        strategy_forward_para = []
+        strategy_name = Parameter.strategy_name
         paradic = {
             'strategy_name': strategy_name,
             'exchange_id': Parameter.exchange_id,
@@ -120,89 +121,100 @@ if __name__ == '__main__':
             if pdic[mode]:
                 forward_mode_dic[mode] = pdic
         paradic['forward_mode_dic'] = forward_mode_dic
-        strategyParameterSet.append(paradic)
+        strategy_forward_para.append(paradic)
+        strategyParameterSet[strategy_name] = strategy_forward_para
     else:
-        # 多品种多周期模式
-        symbolset = pd.read_excel(Parameter.strategy_folder + Parameter.forward_set_filename, index_col='No')
-        symbolsetNum = symbolset.shape[0]
-        for i in range(symbolsetNum):
-            exchangeid = symbolset.ix[i, 'exchange_id']
-            secid = symbolset.ix[i, 'sec_id']
-            symbol_para_dic = {
-                'strategy_name': symbolset.ix[i, 'strategy_name'],
-                'exchange_id': exchangeid,
-                'sec_id': secid,
-                'K_MIN': symbolset.ix[i, 'K_MIN'],
-                'startdate': symbolset.ix[i, 'startdate'],
-                'enddate': symbolset.ix[i, 'enddate'],
-                'result_para_dic': Parameter.result_para_dic
-            }
-            forward_mode_dic = {}
-            for k, v in Parameter.forward_mode_para_dic.items():
-                enable = symbolset.ix[i, k]
-                if enable:
-                    sub_stop_loss_dic = {}
-                    for k1 in v.keys():
-                        if k1 == k:
-                            sub_stop_loss_dic[k1] = True
-                        else:
-                            sub_stop_loss_dic[k1] = Parameter.para_str_to_float(symbolset.ix[i, k1])
-                    forward_mode_dic[k] = sub_stop_loss_dic
-            symbol_para_dic['forward_mode_dic'] = forward_mode_dic
-            strategyParameterSet.append(symbol_para_dic)
+        multi_symbol_control_df = pd.read_excel(Parameter.root_path + Parameter.forward_set_filename, sheet_name=None)
+        multi_strategy_control = multi_symbol_control_df['Control']
+        for n, s in multi_strategy_control.iterrows():
+            strategy_name = s['strategy']
+            strategy_switch = s['switch']
+            if strategy_switch:
+                strategy_forward_para = []
+                # 多品种多周期模式
+                symbolset = multi_symbol_control_df[strategy_name]
+                symbolsetNum = symbolset.shape[0]
+                for i in range(symbolsetNum):
+                    exchangeid = symbolset.ix[i, 'exchange_id']
+                    secid = symbolset.ix[i, 'sec_id']
+                    symbol_para_dic = {
+                        'strategy_name': symbolset.ix[i, 'strategy_name'],
+                        'exchange_id': exchangeid,
+                        'sec_id': secid,
+                        'K_MIN': symbolset.ix[i, 'K_MIN'],
+                        'startdate': symbolset.ix[i, 'startdate'],
+                        'enddate': symbolset.ix[i, 'enddate'],
+                        'result_para_dic': Parameter.result_para_dic
+                    }
+                    forward_mode_dic = {}
+                    for k, v in Parameter.forward_mode_para_dic.items():
+                        enable = symbolset.ix[i, k]
+                        if enable:
+                            sub_stop_loss_dic = {}
+                            for k1 in v.keys():
+                                if k1 == k:
+                                    sub_stop_loss_dic[k1] = True
+                                else:
+                                    sub_stop_loss_dic[k1] = Parameter.para_str_to_float(symbolset.ix[i, k1])
+                            forward_mode_dic[k] = sub_stop_loss_dic
+                    symbol_para_dic['forward_mode_dic'] = forward_mode_dic
+                    strategy_forward_para.append(symbol_para_dic)
+                strategyParameterSet[strategy_name] = strategy_forward_para
 
-    for strategyParameter in strategyParameterSet:
+    for strategy_name, strategy_bt_parameter in strategyParameterSet.items():
+        strategy_folder = "%s%s\\" % (Parameter.root_path, strategy_name)
+        for strategyParameter in strategy_bt_parameter:
 
-        strategy_name = strategyParameter['strategy_name']
-        exchange_id = strategyParameter['exchange_id']
-        sec_id = strategyParameter['sec_id']
-        bar_type = strategyParameter['K_MIN']
-        startdate = strategyParameter['startdate']
-        enddate = strategyParameter['enddate']
+            strategy_name = strategyParameter['strategy_name']
+            exchange_id = strategyParameter['exchange_id']
+            sec_id = strategyParameter['sec_id']
+            bar_type = strategyParameter['K_MIN']
+            startdate = strategyParameter['startdate']
+            enddate = strategyParameter['enddate']
 
-        symbol = '.'.join([exchange_id, sec_id])
+            symbol = '.'.join([exchange_id, sec_id])
 
-        result_para_dic = strategyParameter['result_para_dic']
-        forward_mode_dic = strategyParameter['forward_mode_dic']
+            result_para_dic = strategyParameter['result_para_dic']
+            forward_mode_dic = strategyParameter['forward_mode_dic']
 
-        symbol_info = DI.SymbolInfo(symbol, startdate, enddate)
-        price_tick = symbol_info.getPriceTick()
-        symbol_bar_folder_name = Parameter.strategy_folder + "%s %s %s %d\\" % (
-            strategy_name, exchange_id, sec_id, bar_type)
-        os.chdir(symbol_bar_folder_name)
-        paraset_name = "%s %s %s %d Parameter.csv" % (strategy_name, exchange_id, sec_id, bar_type)
-        # 读取已有参数表
-        parasetlist = pd.read_csv(paraset_name)['Setname'].tolist()
-        # 混合止损模式
-        sltlist = []
-        for sl_name, stop_loss in forward_mode_dic.items():
-            if sl_name != 'multi_sl' and sl_name != 'common':  # 混合标志和普通模式标志都是不带参数的
-                stop_loss['price_tick'] = price_tick
-                stop_loss_class = StopLoss.strategy_mapping_dic[sl_name](stop_loss)
-                sltlist.append({'name': sl_name,
-                                'paralist': stop_loss_class.get_para_dic_list(),
-                                'folderPrefix': stop_loss_class.get_folder_prefix(),
-                                'fileSuffix': stop_loss_class.get_file_suffix()
-                                })
+            symbol_info = DI.SymbolInfo(symbol, startdate, enddate)
+            price_tick = symbol_info.getPriceTick()
+            symbol_bar_folder_name = strategy_folder + "%s %s %s %d\\" % (
+                strategy_name, exchange_id, sec_id, bar_type)
+            os.chdir(symbol_bar_folder_name)
+            paraset_name = "%s %s %s %d Parameter.csv" % (strategy_name, exchange_id, sec_id, bar_type)
+            # 读取已有参数表
+            parasetlist = pd.read_csv(paraset_name)['Setname'].tolist()
+            # 混合止损模式
+            sltlist = []
+            for sl_name, stop_loss in forward_mode_dic.items():
+                if sl_name != 'multi_sl' and sl_name != 'common':  # 混合标志和普通模式标志都是不带参数的
+                    stop_loss['price_tick'] = price_tick
+                    stop_loss_class = StopLoss.strategy_mapping_dic[sl_name](stop_loss)
+                    sltlist.append({'name': sl_name,
+                                    'paralist': stop_loss_class.get_para_dic_list(),
+                                    'folderPrefix': stop_loss_class.get_folder_prefix(),
+                                    'fileSuffix': stop_loss_class.get_file_suffix()
+                                    })
 
-        if 'multi_sl' in forward_mode_dic.keys():
-            get_mix_forward(strategy_name, sltlist, symbol_info, bar_type, parasetlist, symbol_bar_folder_name, startdate, enddate, result_para_dic)
-        else:
-            # 单止损模式
-            if 'common' in forward_mode_dic.keys():
-                colslist = mtf.getColumnsName(False)
-                resultfilesuffix = 'result.csv'
-                indexcolsFlag = False
-                bt_folder = symbol_bar_folder_name + "%s %d backtesting\\" % (symbol, bar_type)
-                get_forward(strategy_name, symbol_info, bar_type, parasetlist, bt_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
-                            resultfilesuffix)
-            for slt in sltlist:
-                colslist = mtf.getColumnsName(True)
-                resultfilesuffix = slt['fileSuffix']
-                folder_prefix = slt['folderPrefix']
-                indexcolsFlag = True
-                for stop_loss_para_dic in slt['paralist']:
-                    para_name = stop_loss_para_dic['para_name']
-                    raw_folder = symbol_bar_folder_name + "%s%s\\" % (folder_prefix, para_name)
-                    get_forward(strategy_name, symbol_info, bar_type, parasetlist, raw_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
-                                resultfilesuffix + para_name + '.csv')
+            if 'multi_sl' in forward_mode_dic.keys():
+                get_mix_forward(strategy_name, sltlist, symbol_info, bar_type, parasetlist, symbol_bar_folder_name, startdate, enddate, result_para_dic)
+            else:
+                # 单止损模式
+                if 'common' in forward_mode_dic.keys():
+                    colslist = mtf.getColumnsName(False)
+                    resultfilesuffix = 'result.csv'
+                    indexcolsFlag = False
+                    bt_folder = symbol_bar_folder_name + "%s %d backtesting\\" % (symbol, bar_type)
+                    get_forward(strategy_name, symbol_info, bar_type, parasetlist, bt_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
+                                resultfilesuffix)
+                for slt in sltlist:
+                    colslist = mtf.getColumnsName(True)
+                    resultfilesuffix = slt['fileSuffix']
+                    folder_prefix = slt['folderPrefix']
+                    indexcolsFlag = True
+                    for stop_loss_para_dic in slt['paralist']:
+                        para_name = stop_loss_para_dic['para_name']
+                        raw_folder = symbol_bar_folder_name + "%s%s\\" % (folder_prefix, para_name)
+                        get_forward(strategy_name, symbol_info, bar_type, parasetlist, raw_folder, startdate, enddate, colslist, result_para_dic, indexcolsFlag,
+                                    resultfilesuffix + para_name + '.csv')

@@ -146,13 +146,12 @@ forward_mode_para_dic = {
 }
 
 # ====================系统参数==================================
-symbol_KMIN_set_filename = strategy_name + '_multi_symbol_setting_bt.xlsx'  # 多品种回测控制表
-stoploss_set_filename = strategy_name + '_multi_symbol_setting_stoploss.xlsx'   # 多品种止损控制表
-forward_set_filename = strategy_name + '_multi_symbol_setting_forward.xlsx'      # 多品种推进控制表
+symbol_KMIN_set_filename = 'SmartWin_multi_symbol_setting_bt.xlsx'  # 多品种回测控制表
+stoploss_set_filename = 'SmartWin_multi_symbol_setting_stoploss.xlsx'   # 多品种止损控制表
+forward_set_filename = 'SmartWin_multi_symbol_setting_forward.xlsx'      # 多品种推进控制表
 bt_parameter_optimize_polt_filename = strategy_name + '_backtesting_parameter_plot.xlsx'    # 多品种回测参数优化绘图用
 
-root_path = 'D:\\BT_Results\\'
-strategy_folder = "%s%s\\" % (root_path, strategy_name)     # 每个策略对应一个文件夹
+root_path = 'D:\BT_Results\\'
 
 # =================结果指标开关====================
 ResultIndexDic = [
@@ -198,9 +197,27 @@ def para_str_to_int(para_str):
     # 功能函数：用于将从多品种多周期文件读取进来的字符串格式的参数列表转换为符点型列表
     para_float_list = []
     p_type = type(para_str)
-    if p_type == numpy.int64 or p_type == numpy.float64 or p_type == float:
+    if p_type == numpy.int64 or p_type == numpy.float64 or p_type == float or p_type == long:
         para_float_list.append(int(para_str))
     else:
         for x in para_str.split(','):
             para_float_list.append(int(x))
     return para_float_list
+
+
+def get_strategy_para_name_list(strategy_name):
+    # 功能函数，查询某个策略的参数列表
+    strategy_para_name_list = []
+    for para in strategy_para_dic[strategy_name].keys():
+        if para != 'new_para':
+            strategy_para_name_list.append(para)
+    return strategy_para_name_list
+
+
+def get_stop_loss_para_name_list(stop_loss_name):
+    # 功能函数，查询某个止损方式的参数列表
+    stop_loss_para_name_list = []
+    for para in stop_loss_para_dic[stop_loss_name].keys():
+        if para != stop_loss_name:
+            stop_loss_para_name_list.append(para)
+    return stop_loss_para_name_list
